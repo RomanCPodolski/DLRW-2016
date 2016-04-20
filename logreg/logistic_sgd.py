@@ -73,10 +73,18 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
 
     NLL = -T.mean(T.log(p_y_given_x)[T.arange(y.shape[0]), y]) # negative log likelihood
     
-    loss = theano.function(inputs = [ x, y ], outputs = NLL, allow_input_downcast = True)
+    cost = theano.function(inputs = [ x, y ], outputs = NLL, allow_input_downcast = True)
     
     g_W = theano.function(inputs = [ x, y ], outputs = T.grad(NLL, W), allow_input_downcast = True)
     g_b = theano.function(inputs = [ x, y ], outputs = T.grad(NLL, b), allow_input_downcast = True)
+
+    def loss(parameters, inputs, targets):
+        Weights, bias = climin.util.shaped_from_flat(parameters, tmpl)
+
+        W.set_value(Weights)
+        b.set_value(bias)
+
+        return cost(inputs, targets)
 
     def d_loss_wrt_pars(parameters, inputs, targets):
         Weights, bias = climin.util.shaped_from_flat(parameters, tmpl)
@@ -87,36 +95,54 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
         return np.concatenate([g_W(inputs, targets).flatten(), g_b(inputs, targets)])
 
     if optimizer == 'gd':
+        print('... using gradient descent')
         opt = cli.GradientDescent(flat, d_loss_wrt_pars, step_rate=0.1, momentum=.95, args=args)
     elif optimizer == 'lbfgs':
+        print('... using using quasi-newton L-BFGS')
         opt = cli.Lbfgs(flat, loss, d_loss_wrt_pars, args=args)
-    elif optimizer == 'ncg':
+    elif optimizer == 'nlcg':
+        print('... using using non linear conjugate gradient')
         opt = cli.NonlinearConjugateGradient(flat, loss, d_loss_wrt_pars, args=args)
     elif optimizer == 'rmsprop':
+        print('... using rmsprop')
         opt = cli.RmsProp(flat, d_loss_wrt_pars, step_rate=1e-4, decay=0.9, args=args)
     elif optimizer == 'rprop':
+        print('... using resilient propagation')
         opt = cli.Rprop(flat, d_loss_wrt_pars, args=args)
     else:
         print('unknown optimizer')
         return 1
 
-    #################
-    #  TRAIN MODEL  #
-    #################
     print('... training the model')
 
-    start_time = timeit.default_timer()
+    valid_losses = []
+    train_losses = []
+    test_losses = []
 
     done_looping = False
     epoch = 0
 
+    start_time = timeit.default_timer()
     for info in opt:
-        # print(info['loss'], loss(valid_set_x, valid_set_y))
-        print('Loss', loss(valid_set_x, valid_set_y))
+
+        train_loss = cost(train_set_x, train_set_y)
+        train_losses.append(train_loss)
+
+        valid_loss = cost(valid_set_x, valid_set_y)
+        valid_losses.append(valid_loss)
+
+        test_loss = cost(test_set_x, test_set_y)
+        test_losses.append(test_loss)
+
+        print('Loss', valid_loss)
         if info['n_iter'] >= n_epochs and (not done_looping):
             break
 
-    end_time = timeit.default_time()
+    end_time = timeit.default_timer()
+
+    print('Done Training ', end_time - start_time)
+
+    return train_losses, valid_losses, test_losses
 
 def predict():
     """
@@ -143,4 +169,31 @@ def predict():
     print(predicted_values)
 
 if __name__ == "__main__":
-    sys.exit(sgd_optimization_mnist(optimizer='rprop'))
+    f, (gd_plt, lbfgs_plt, nlcg_plt, rms_plt, rprop_plt) = plt.subplots(5)
+
+    gd_train_loss, gd_valid_loss, gd_test_loss = sgd_optimization_mnist(optimizer='gd')
+    gd_plt.plot(gd_train_loss, '-', linewidth=1, label='train loss')
+    gd_plt.plot(gd_valid_loss, '-', linewidth=1, label='vaidation loss')
+    gd_plt.plot(gd_test_loss, '-', linewidth=1, label='test loss')
+
+    lbfgs_train_loss, lbfgs_valid_loss, lbfgs_test_loss = sgd_optimization_mnist(optimizer='lbfgs')
+    lbfgs_plt.plot(lbfgs_train_loss, '-', linewidth=1, label='train loss')
+    lbfgs_plt.plot(lbfgs_valid_loss, '-', linewidth=1, label='vaidation loss')
+    lbfgs_plt.plot(lbfgs_test_loss, '-', linewidth=1, label='test loss')
+
+    nlcg_train_loss, nlcg_valid_loss, nlcg_test_loss = sgd_optimization_mnist(optimizer='nlcg')
+    nlcg_plt.plot(nlcg_train_loss, '-', linewidth=1, label='train loss')
+    nlcg_plt.plot(nlcg_valid_loss, '-', linewidth=1, label='vaidation loss')
+    nlcg_plt.plot(nlcg_test_loss, '-', linewidth=1, label='test loss')
+
+    rms_train_loss, rms_valid_loss, rms_test_loss = sgd_optimization_mnist(optimizer='rmsprop')
+    rms_plt.plot(rms_train_loss, '-', linewidth=1, label='train loss')
+    rms_plt.plot(rms_valid_loss, '-', linewidth=1, label='vaidation loss')
+    rms_plt.plot(rms_test_loss, '-', linewidth=1, label='test loss')
+
+    rprop_train_loss, rprop_valid_loss, rprop_test_loss = sgd_optimization_mnist(optimizer='rprop')
+    rprop_plt.plot(rprop_train_loss, '-', linewidth=1, label='train loss')
+    rprop_plt.plot(rprop_valid_loss, '-', linewidth=1, label='vaidation loss')
+    rprop_plt.plot(rprop_test_loss, '-', linewidth=1, label='test loss')
+
+    plt.savefig('errors.png')
