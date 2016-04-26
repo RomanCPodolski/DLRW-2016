@@ -14,7 +14,7 @@ import theano
 import theano.tensor as T
 import numpy
 
-def load_data(dataset, shared = False):
+def load_data(dataset, shared = True):
     """Loads the dataset
 
     :type dataset: string
@@ -70,6 +70,7 @@ def load_data(dataset, shared = False):
         data_x, data_y = data_xy
         shared_x = theano.shared(numpy.asarray(data_x,
             dtype=theano.config.floatX), borrow=borrow)
+
         shared_y = theano.shared(numpy.asarray(data_y,
             dtype=theano.config.floatX), borrow=borrow)
 
@@ -80,7 +81,8 @@ def load_data(dataset, shared = False):
         # floats it doesnt make sense) therefore instead of returning
         # ``shared_y`` we will have to cast it to int. This little hack
         # lets us get around this issue
-        return shared_x, T.cast(shared_y, 'int32')
+        # return shared_x, T.cast(shared_y, 'int32')
+        return shared_x, shared_y
 
     if shared:
         test_set_x, test_set_y = shared_dataset(test_set)

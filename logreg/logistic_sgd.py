@@ -39,7 +39,7 @@ class LogisticRegression(object):
     determine a class membership probability.
     """
 
-    def __init__(self, input, n_in, n_out):
+    def __init__(self, input, n_in, n_out, W = None, b = None):
         """ Initialize the parameters of the logistic regression
 
         :type input: theano.tensor.TensorType
@@ -57,23 +57,16 @@ class LogisticRegression(object):
         """
         # start-snippet-1
         # initialize with 0 the weights W as a matrix of shape (n_in, n_out)
-        self.W = theano.shared(
-            value=np.zeros(
-                (n_in, n_out),
-                dtype=theano.config.floatX
-            ),
-            name='W',
-            borrow=True
-        )
-        # initialize the biases b as a vector of n_out 0s
-        self.b = theano.shared(
-            value=np.zeros(
-                (n_out,),
-                dtype=theano.config.floatX
-            ),
-            name='b',
-            borrow=True
-        )
+        if W is None:
+            W_values = np.zeros((n_in, n_out), dtype = theano.config.floatX)
+            W = theano.shared(value = W_values, name = 'W', borrow = True )
+
+        if b is None:
+            b_values = np.zeros((n_out,), dtype = theano.config.floatX)
+            b = theano.shared(value = b_values, name = 'b', borrow = True )
+
+        self.W = W
+        self.b = b
 
         # symbolic expression for computing the matrix of class-membership
         # probabilities
@@ -161,7 +154,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
     test_set_x, test_set_y = datasets[2]
 
     tmpl = [(28 * 28, 10), 10]
-    flat, (Weights, bias) = climin.util.empty_with_views(tmpl)
+    flat, (Weights, bias) = cli.util.empty_with_views(tmpl)
 
     cli.initialize.randomize_normal(flat, 0, 0.1) # initialize the parameters with random numbers
 
@@ -171,16 +164,22 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
     else:
         args = cli.util.iter_minibatches([train_set_x, train_set_y], batch_size, [0, 0])
         args = ((i, {}) for i in args)
-        batches_per_pass = train_set_x.shape[0] / batch_size
+        n_train_batches = train_set_x.shape[0] // batch_size
+        n_valid_batches = valid_set_x.shape[0] // batch_size
+        n_test_batches  = test_set_x.shape[0] // batch_size
 
     print('... building the model')
 
     x = T.matrix('x') # data, represented as rasterized images dimension 28 * 28
     y = T.ivector('y') # labes, represented as 1D vector of [int] labels dimension 10
 
-    parameters = T.vector('params') # flat vector storing the parameters, required from climin
-
-    classifier = LogisticRegression(input = x, n_in = 28 * 28, n_out = 10)
+    classifier = LogisticRegression(
+            input = x,
+            n_in = 28 * 28,
+            n_out = 10,
+            W = theano.shared(value = Weights, name = 'W', borrow = True),
+            b = theano.shared(value = bias, name = 'b', borrow = True)
+            )
 
     cost = theano.function(
             inputs = [ x, y ],
@@ -194,56 +193,33 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
                 T.grad(classifier.negative_log_likelihood(y), classifier.W),
                 T.grad(classifier.negative_log_likelihood(y), classifier.b)
                 ],
-            # updates = [
-                # (classifier.W, u_W),
-                # (classifier.b, u_b),
-                # ],
             allow_input_downcast = True
             )
-    # loss = theano.function(
-            # inputs = [parameters, x, y ],
-            # outputs = NLL,
-            # updates = [
-                # (W, climin.util.shaped_from_flat(parameters, tmpl)[0]),
-                # (b, climin.util.shaped_from_flat(parameters, tmpl)[1]),
-                # ],
-            # allow_input_downcast = True
-            # )
 
-    # d_loss_wrt_pars = theano.function(
-            # inputs = [parametrs, x, y ],
-            # outputs = [
-                # T.grad(NLL, W),
-                # T.grad(NLL, b)
-                # ],
-            # updates = [
-                # (W, climin.util.shaped_from_flat(parameters, tmpl)[0]),
-                # (b, climin.util.shaped_from_flat(parameters, tmpl)[1]),
-                # ],
-            # allow_input_downcast = True
-            # )
+    def loss(parameters, inputs, targets):
+        Weights, bias = cli.util.shaped_from_flat(parameters, tmpl)
 
-    def loss(parameters, input, target):
-        Weights, bias = climin.util.shaped_from_flat(parameters, tmpl)
-
-        classifier.W.set_value(Weights)
-        classifier.b.set_value(bias)
-
-        return cost(input, target)
+        return cost(inputs, targets)
 
     def d_loss_wrt_pars(parameters, inputs, targets):
-        Weights, bias = climin.util.shaped_from_flat(parameters, tmpl)
-
-        classifier.W.set_value(Weights)
-        classifier.b.set_value(bias)
+        Weights, bias = cli.util.shaped_from_flat(parameters, tmpl)
 
         g_W, g_b = gradients(inputs, targets)
 
         return np.concatenate([g_W.flatten(), g_b])
 
+    zero_one_loss = theano.function(
+            inputs = [x, y],
+            outputs = classifier.errors(y),
+            allow_input_downcast = True
+            )
+
     if optimizer == 'gd':
         print('... using gradient descent')
         opt = cli.GradientDescent(flat, d_loss_wrt_pars, step_rate=0.1, momentum=.95, args=args)
+    elif optimizer == 'bfgs':
+        print('... using using quasi-newton BFGS')
+        opt = cli.Bfgs(flat, loss, d_loss_wrt_pars, args=args)
     elif optimizer == 'lbfgs':
         print('... using using quasi-newton L-BFGS')
         opt = cli.Lbfgs(flat, loss, d_loss_wrt_pars, args=args)
@@ -256,42 +232,91 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
     elif optimizer == 'rprop':
         print('... using resilient propagation')
         opt = cli.Rprop(flat, d_loss_wrt_pars, args=args)
+    elif optimizer == 'adam':
+        print('... using adaptive momentum estimation optimizer')
+        opt = cli.Adam(flat, d_loss_wrt_pars, step_rate = 0.0002, decay = 0.99999999, decay_mom1 = 0.1, decay_mom2 = 0.001, momentum = 0, offset = 1e-08, args=args)
+    elif optimizer == 'adadelta':
+        print('... using adadelta')
+        opt = cli.Adadelta(flat, d_loss_wrt_pars, step_rate=1, decay = 0.9, momentum = .95, offset = 0.0001, args=args)
     else:
         print('unknown optimizer')
         return 1
 
     print('... training the model')
 
+    # early stopping parameters
+    patience = 5000 # look at this many samples regardless
+    patience_increase = 2 # wait this mutch longer when a new best is found
+    improvement_threshold = 0.995 # a relative improvement of this mutch is considered signigicant
+    validation_frequency = min(n_train_batches, patience // 2)
+    best_validation_loss = np.inf
+    test_loss = 0.
+
     valid_losses = []
     train_losses = []
     test_losses = []
 
     done_looping = False
-    epoch = 0
+    epoch = 0 # do I need this parameter?
 
     start_time = timeit.default_timer()
     for info in opt:
+        iter = info['n_iter']
+        epoch = iter // n_train_batches + 1
+        minibatch_index = iter % n_train_batches
+        minibatch_x, minibatch_y = info['args']
 
-        train_loss = cost(train_set_x, train_set_y)
-        train_losses.append(train_loss)
+        if ( iter + 1 ) % validation_frequency == 0:
+            # compute zero-one loss on validation set
+            validation_loss = zero_one_loss(valid_set_x, valid_set_y)
+            valid_losses.append([epoch, validation_loss])
+            # train_losses.append(zero_one_loss(train_set_x, train_set_y))
 
-        valid_loss = cost(valid_set_x, valid_set_y)
-        valid_losses.append(valid_loss)
+            print(
+                    'epoch %i, minibatch %i/%i, validation error % f %%' %
+                    (
+                        epoch,
+                        minibatch_index + 1,
+                        n_train_batches,
+                        validation_loss * 100
+                        )
+                    )
+            # if we got the best validation score until now
+            if validation_loss < best_validation_loss:
+               # improve patience if loss improvement is good enough
+                if validation_loss < best_validation_loss * improvement_threshold:
+                    patience = max(patience, iter * patience_increase)
+                best_validation_loss = validation_loss
+                # test it on the test set
+                test_loss = zero_one_loss(test_set_x, test_set_y)
+                test_losses.append([epoch, test_loss])
 
-        test_loss = cost(test_set_x, test_set_y)
-        test_losses.append(test_loss)
+                print(
+                        '    epoch %i, minibatch %i/%i, test error of best model %f %%' %
+                        (
+                            epoch,
+                            minibatch_index + 1,
+                            n_train_batches,
+                            test_loss * 100
+                            )
+                        )
 
-        print('Loss', valid_loss)
-        if info['n_iter'] >= n_epochs and (not done_looping):
+                with open('best_model_logreg_'+optimizer+'.pkl', 'wb') as f:
+                    pickle.dump(classifier, f)
+
+        if patience <= iter or epoch >= n_epochs:
             break
 
     end_time = timeit.default_timer()
 
-    print('Done Training ', end_time - start_time)
+    print('Optimization complete with best validation score of %f %%, with test performance %f %%' % (best_validation_loss * 100., test_loss * 100.))
+    print('The code run for %d epochs, with %f epochs/sec' % (epoch, 1. * epoch / (end_time - start_time)))
+    print(('The code for file ' + os.path.split(__file__)[1] + ' ran for %.1fs' % ((end_time - start_time))), file=sys.stderr)
 
-    losses = (train_losses, valid_losses, test_losses)
+    losses = (np.asarray(train_losses), np.asarray(valid_losses), np.asarray(test_losses))
+    methadata = (best_validation_loss * 100., test_loss * 100., epoch, 1. * epoch / (end_time - start_time), end_time - start_time)
 
-    return classifier, losses 
+    return classifier, losses, methadata 
 
 def predict():
     """
@@ -318,52 +343,48 @@ def predict():
     print(predicted_values)
 
 if __name__ == "__main__":
+    optimizer_names = {
+            'gd': 'Gradient Descent',
+            'bfgs': 'Quasi-Newton BFGS',
+            'lbfgs': 'Quasi-Newton L-BFGS',
+            'nlcg': 'Non-Linear Conjugate Gradient',
+            'rmsprop': 'RMSPROP',
+            'rprop': 'Resilient Propagation',
+            'adam': 'Adam',
+            'adadelta': 'Adadelta',
+            }
 
-    gd_classifier, gd_losses = sgd_optimization_mnist(optimizer='gd')
-    gd_train_loss, gd_valid_loss, gd_test_loss = gd_losses
+    for o in ['gd', 'bfgs', 'lbfgs', 'nlcg', 'rmsprop', 'rprop', 'adam', 'adadelta']:
+    # for o in ['gd', 'rmsprop', 'rprop', 'adam', 'adadelta']:
 
-    lbfgs_classifier, lbfgs_losses = sgd_optimization_mnist(optimizer='lbfgs')
-    lbfgs_train_loss, lbfgs_valid_loss, lbfgs_test_loss = lbfgs_losses
+        f_error = plt.figure()
+        classifier, losses, methadata = sgd_optimization_mnist(n_epochs = 1000, optimizer=o)
+        train_loss, valid_loss, test_loss = losses
+        best_validation_loss, best_test_loss, epochs, epochs_pro_second, time_trained = methadata
 
-    nlcg_classifier, nlcg_losses = sgd_optimization_mnist(optimizer='nlcg')
-    nlcg_train_loss, nlcg_valid_loss, nlcg_test_loss = nlcg_losses
+        plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
+        plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
 
-    rms_classifier, rms_losses = sgd_optimization_mnist(optimizer='rmsprop')
-    rms_train_loss, rms_valid_loss, rms_test_loss = rms_losses
+        plt.legend()
 
-    rprop_classifier, rprop_losses = sgd_optimization_mnist(optimizer='rprop')
-    rprop_train_loss, rprop_valid_loss, rprop_test_loss = rprop_losses
+        plt.title('Error ' + optimizer_names[o] + " with best validation score of %f %%,\n test performance %f %%, after %.1fs " % (best_validation_loss, best_test_loss, time_trained))
+        plt.savefig('errors_'+o+'.png')
 
-    f_errors, (gd_plt, lbfgs_plt, nlcg_plt, rms_plt, rprop_plt) = plt.subplots(5, sharex = True, sharey = True)
+        f_repfields, axes = plt.subplots(2, 5, subplot_kw = {'xticks': [], 'yticks': []})
+        f_repfields.subplots_adjust(hspace = 0.3, wspace = 0.05)
+        f_repfields.canvas.set_window_title('Receptive Fields for Logistic Regression')
 
-    gd_plt.plot(gd_train_loss, '-', linewidth=1, label='train loss')
-    gd_plt.plot(gd_valid_loss, '-', linewidth=1, label='vaidation loss')
-    gd_plt.plot(gd_test_loss, '-', linewidth=1, label='test loss')
+        repfield = []
+        for i in range(10):
+            repfield.append(np.reshape(np.array(classifier.W.get_value())[:,i], (28, 28)))
 
-    lbfgs_plt.plot(lbfgs_train_loss, '-', linewidth=1, label='train loss')
-    lbfgs_plt.plot(lbfgs_valid_loss, '-', linewidth=1, label='vaidation loss')
-    lbfgs_plt.plot(lbfgs_test_loss, '-', linewidth=1, label='test loss')
+        i = 0
+        for ax, rep in zip(axes.flat, repfield):
+            ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
+            ax.set_title('Weights ' + str(i))
+            i = i + 1
 
-    nlcg_plt.plot(nlcg_train_loss, '-', linewidth=1, label='train loss')
-    nlcg_plt.plot(nlcg_valid_loss, '-', linewidth=1, label='vaidation loss')
-    nlcg_plt.plot(nlcg_test_loss, '-', linewidth=1, label='test loss')
+        f_repfields.subplots_adjust(hspace=0.03, wspace=0.05)
 
-    rms_plt.plot(rms_train_loss, '-', linewidth=1, label='train loss')
-    rms_plt.plot(rms_valid_loss, '-', linewidth=1, label='vaidation loss')
-    rms_plt.plot(rms_test_loss, '-', linewidth=1, label='test loss')
-
-    rprop_plt.plot(rprop_train_loss, '-', linewidth=1, label='train loss')
-    rprop_plt.plot(rprop_valid_loss, '-', linewidth=1, label='vaidation loss')
-    rprop_plt.plot(rprop_test_loss, '-', linewidth=1, label='test loss')
-
-    plt.savefig('errors.png')
-
-    f_repfields, (gd_plt, lbfgs_plt, nlcg_plt, rms_plt, rprop_plt) = plt.subplots(1,5)
-
-    gd_plt.imshow(gd_classifier.W.get_value(), cmap = 'Greys_r')
-    lbfgs_plt.imshow(lbfgs_classifier.W.get_value(), cmap = 'Greys_r')
-    nlcg_plt.imshow(nlcg_classifier.W.get_value(), cmap = 'Greys_r')
-    rms_plt.imshow(rms_classifier.W.get_value(), cmap = 'Greys_r')
-    rprop_plt.imshow(rprop_classifier.W.get_value(), cmap = 'Greys_r')
-    plt.savefig('repfields.png')
-
+        f_repfields.suptitle('Receptive Fields for Logisitc Regression with ' + optimizer_names[o] + ' on MNIST')
+        plt.savefig('repfields_'+o+'.png')
