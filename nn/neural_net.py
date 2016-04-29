@@ -237,7 +237,8 @@ def test_mlp(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 10
     tmpl = [(28 * 28, n_hidden), n_hidden, (n_hidden, 10), 10]
     flat, (Weights_hidden, bias_hidden, Weights_log, bias_log) = climin.util.empty_with_views(tmpl)
 
-    cli.initialize.randomize_normal(flat, -np.sqrt(6. / (28*28 + n_hidden)), np.sqrt(6. / (28*28 + n_hidden))) # initialize the parameters with random numbers
+    # cli.initialize.randomize_normal(flat, -np.sqrt(6. / (28*28 + n_hidden)), np.sqrt(6. / (28*28 + n_hidden))) # initialize the parameters with random numbers
+    cli.initialize.randomize_normal(flat, 0, 0.01) # initialize the parameters with random numbers
 
     if batch_size is None:
         args = itertools.repeat(([train_set_x, train_set_y], {}))
@@ -255,9 +256,10 @@ def test_mlp(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 10
     print('... building the model')
 
     # allocate symbolic variables for the data
-    index = T.lscalar() # index to a [mini]batch
+    # index = T.lscalar() # index to a [mini]batch
     x = T.matrix('x') # the data is represented as rasterized images
     y = T.ivector('y') # the labels are presented as 1D of [int] labels
+    parameters = T.vector('parameters')
 
     rng = np.random.RandomState(1234)
 
@@ -282,7 +284,7 @@ def test_mlp(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 10
 
     cost = theano.function(
             inputs = [x, y],
-            outputs = cost_t,
+            outputs = classifier.negative_log_likelihood(y) + L1_reg * classifier.L1 + L2_reg * classifier.L2_sqr,
             allow_input_downcast = True
             )
 
@@ -305,17 +307,16 @@ def test_mlp(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 10
             )
 
     def loss(paramters, inputs, targets):
-        Weights_log, bias_log, Weights_hidden, bias_hidden = climin.util.shaped_from_flat(parameters, tmpl)
+        # Weights_log, bias_log, Weights_hidden, bias_hidden = climin.util.shaped_from_flat(parameters, tmpl)
 
         return cost(inputs, targets)
 
     def d_loss_wrt_pars(parameters, inputs, targets):
-        Weights_hidden, bias_hidden, Weights_log, bias_log = climin.util.shaped_from_flat(parameters, tmpl)
+        # Weights_hidden, bias_hidden, Weights_log, bias_log = climin.util.shaped_from_flat(parameters, tmpl)
 
         g_W_h, g_b_h, g_W_l, g_b_l = gradients(inputs, targets)
 
         return np.concatenate([g_W_h.flatten(), g_b_h, g_W_l.flatten(), g_b_l])
-
 
     if optimizer == 'gd':
         print('... using gradient descent')
@@ -426,15 +427,17 @@ def test_mlp(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 10
 
 if __name__ == "__main__":
     f = plt.figure()
-    classifier, losses, methadata = test_mlp(activation = T.tanh, optimizer = 'gd')
+    classifier, losses, methadata = test_mlp(activation = T.tanh, optimizer = 'rmsprop')
     train_loss, valid_loss, test_loss = losses
     best_validation_loss, best_test_loss, time_trained = methadata
 
     # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
     plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'test loss')
+    plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
 
-    plt.title('Error activation tanh with best validation score of %f %%,\n test performance %f %%, after %.1fs ' % (best_validation_loss, best_test_loss, time_trained))
+    plt.legend()
+
+    plt.title('Error activation tanh with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
     plt.savefig('errors_tanh.png')
 
     f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
@@ -450,15 +453,17 @@ if __name__ == "__main__":
     plt.savefig('repfields_tanh.png')
 
     f = plt.figure()
-    classifier, losses = test_mlp(activation = T.nnet.sigmoid, optimizer = 'gd')
+    classifier, losses, methadata = test_mlp(activation = T.nnet.sigmoid, optimizer = 'rmsprop')
     train_loss, valid_loss, test_loss = losses
     best_validation_loss, best_test_loss, time_trained = methadata
 
     # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
     plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'test loss')
+    plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
 
-    plt.title('Error activation sigmoid with best validation score of %f %%,\n test performance %f %%, after %.1fs ' % (best_validation_loss, best_test_loss, time_trained))
+    plt.legend()
+
+    plt.title('Error activation sigmoid with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
     plt.savefig('errors_sigmoid.png')
 
     f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
@@ -474,15 +479,17 @@ if __name__ == "__main__":
     plt.savefig('repfields_sigmoid.png')
 
     f = plt.figure()
-    classifier, losses = test_mlp(activation = T.nnet.relu, optimizer = 'gd')
+    classifier, losses, methadata = test_mlp(activation = T.nnet.relu, optimizer = 'rmsprop')
     train_loss, valid_loss, test_loss = losses
     best_validation_loss, best_test_loss, time_trained = methadata
 
     # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
     plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'test loss')
+    plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
 
-    plt.title('Error activation ReLU with best validation score of %f %%,\n test performance %f %%, after %.1fs ' % (best_validation_loss, best_test_loss, time_trained))
+    plt.legend()
+
+    plt.title('Error activation ReLU with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
     plt.savefig('errors_relu.png')
 
     f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
