@@ -426,34 +426,34 @@ def test_mlp(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 10
     return classifier, losses, methadata
 
 if __name__ == "__main__":
+    # f = plt.figure()
+    # classifier, losses, methadata = test_mlp(activation = T.tanh, optimizer = 'rmsprop')
+    # train_loss, valid_loss, test_loss = losses
+    # best_validation_loss, best_test_loss, time_trained = methadata
+
+    # # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
+    # plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
+    # plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
+
+    # plt.legend()
+
+    # plt.title('Error activation tanh with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
+    # plt.savefig('errors_tanh.png')
+
+    # f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
+    # repfield = []
+
+    # for i in range(300):
+        # repfield.append(np.reshape(np.array(classifier.hiddenLayer.W.get_value())[:,i], (28, 28)))
+
+    # for ax, rep in zip(axes.flat, repfield):
+        # ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
+
+    # f_repfields.suptitle('Receptive Fields for a two layer neural net with 300 tanh neurons on MNIST')
+    # plt.savefig('repfields_tanh.png')
+
     f = plt.figure()
-    classifier, losses, methadata = test_mlp(activation = T.tanh, optimizer = 'rmsprop')
-    train_loss, valid_loss, test_loss = losses
-    best_validation_loss, best_test_loss, time_trained = methadata
-
-    # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
-    plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
-
-    plt.legend()
-
-    plt.title('Error activation tanh with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
-    plt.savefig('errors_tanh.png')
-
-    f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
-    repfield = []
-
-    for i in range(300):
-        repfield.append(np.reshape(np.array(classifier.hiddenLayer.W.get_value())[:,i], (28, 28)))
-
-    for ax, rep in zip(axes.flat, repfield):
-        ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
-
-    f_repfields.suptitle('Receptive Fields for a two layer neural net with 300 tanh neurons on MNIST')
-    plt.savefig('repfields_tanh.png')
-
-    f = plt.figure()
-    classifier, losses, methadata = test_mlp(activation = T.nnet.sigmoid, optimizer = 'rmsprop')
+    classifier, losses, methadata = test_mlp(activation = T.nnet.sigmoid, optimizer = 'gd')
     train_loss, valid_loss, test_loss = losses
     best_validation_loss, best_test_loss, time_trained = methadata
 
@@ -479,7 +479,7 @@ if __name__ == "__main__":
     plt.savefig('repfields_sigmoid.png')
 
     f = plt.figure()
-    classifier, losses, methadata = test_mlp(activation = T.nnet.relu, optimizer = 'rmsprop')
+    classifier, losses, methadata = test_mlp(activation = T.nnet.relu, optimizer = 'gd')
     train_loss, valid_loss, test_loss = losses
     best_validation_loss, best_test_loss, time_trained = methadata
 
