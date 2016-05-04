@@ -55,7 +55,7 @@ def load_cifar(dataset, shared = False):
 
     print('... loading data')
 
-    with tarfile.open(dataset, 'r:gz') as f:
+    with tarfile.open(dataset, 'r') as f:
         try:
             batch_1 = pickle.load(f.extractfile(f.getmember('cifar-10-batches-py/data_batch_1')))
             batch_2 = pickle.load(f.extractfile(f.getmember('cifar-10-batches-py/data_batch_2')))
@@ -63,9 +63,9 @@ def load_cifar(dataset, shared = False):
             batch_4 = pickle.load(f.extractfile(f.getmember('cifar-10-batches-py/data_batch_4')))
             batch_5 = pickle.load(f.extractfile(f.getmember('cifar-10-batches-py/data_batch_5')))
             batch_test = pickle.load(f.extractfile(f.getmember('cifar-10-batches-py/data_batch_5')))
-            train_set = [batch_1['data'][:,:1024] + batch_2['data'][:,:1024] + batch_3['data'][:,:1024], batch_1['labels'] + batch_2['labels'] + batch_3['labels']]
-            valid_set = [batch_4['data'][:,:1024] + batch_5['data'][:,:1024], batch_4['labels'] + batch_5['labels']]
-            test_set = [batch_test['data'][:,:1024], batch_test['labels']] 
+            train_set = [numpy.concatenate((batch_1['data'][:,:1024], batch_2['data'][:,:1024], batch_3['data'][:,:1024])), numpy.asarray(batch_1['labels'] + batch_2['labels'] + batch_3['labels'])]
+            valid_set = [numpy.concatenate((batch_4['data'][:,:1024], batch_5['data'][:,:1024])), numpy.asarray(batch_4['labels'] + batch_5['labels'])]
+            test_set = [batch_test['data'][:,:1024], numpy.asarray(batch_test['labels'])] 
         except:
             train_set, valid_set, test_set = pickle.load(f)
 
