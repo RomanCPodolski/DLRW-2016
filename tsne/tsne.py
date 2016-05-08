@@ -171,4 +171,4 @@ if __name__ == "__main__":
 	labels = Math.loadtxt("mnist2500_labels.txt");
 	Y = tsne(X, 2, 50, 20.0);
 	Plot.scatter(Y[:,0], Y[:,1], 20, labels);
-	Plot.show();
+	Plot.savefig('embeddings.png');
