@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2016 romancpodolski <romancpodolski@Romans-MacBook-Pro.local>
+# Copyright © 2016 romancpodolski <roman.podolski@tum.de>
 #
 # Distributed under terms of the MIT license.
 
@@ -89,6 +89,10 @@ class LogisticRegression(object):
         # keep track of model input
         self.input = input
 
+        self.valid_losses = []
+        self.train_losses = []
+        self.test_losses = []
+
     def negative_log_likelihood(self, y):
         """Return the mean of the negative log-likelihood of the prediction
         of this model under a given target distribution.
@@ -147,7 +151,7 @@ class LogisticRegression(object):
 
 def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=600, optimizer='gd'):
 
-    datasets = load_data(dataset, shared = False)
+    datasets = load_data(dataset)
 
     train_set_x, train_set_y = datasets[0]
     valid_set_x, valid_set_y = datasets[1]
@@ -269,7 +273,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
         if ( iter + 1 ) % validation_frequency == 0:
             # compute zero-one loss on validation set
             validation_loss = zero_one_loss(valid_set_x, valid_set_y)
-            valid_losses.append([epoch, validation_loss])
+            classifier.valid_losses.append([epoch, validation_loss])
             # train_losses.append(zero_one_loss(train_set_x, train_set_y))
 
             print(
@@ -289,7 +293,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
                 best_validation_loss = validation_loss
                 # test it on the test set
                 test_loss = zero_one_loss(test_set_x, test_set_y)
-                test_losses.append([epoch, test_loss])
+                classifier.test_losses.append([epoch, test_loss])
 
                 print(
                         '    epoch %i, minibatch %i/%i, test error of best model %f %%' %
@@ -341,6 +345,24 @@ def predict():
     predicted_values = predict_model(test_set_x[:10])
     print("Predicted values for the first 10 examples in test set:")
     print(predicted_values)
+
+def main(argv):
+
+    if len(argv) < 1:
+        print("please call with at least 1 argument")
+        return -1
+
+    command = argv[0]
+
+    if command == 'train':
+        return train()
+
+    elif command == 'plot':
+        return plot()
+    else: 
+        print('unknown command: %' % command) 
+        print("either use 'train' or 'plot'") 
+        return -1
 
 if __name__ == "__main__":
     optimizer_names = {

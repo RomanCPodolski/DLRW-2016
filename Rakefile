@@ -1,3 +1,5 @@
+require 'rake/clean'
+
 namespace :logreg do
   file 'logreg/best_model.pkl' do
     %x(python logreg/logistic_regression.py train 1>&2)

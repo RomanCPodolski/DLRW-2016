@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2016 romancpodolski <romancpodolski@Romans-MBP-2.home>
+# Copyright © 2016 romancpodolski <roman.podolski@tum.de>
 #
 # Distributed under terms of the MIT license.
 
@@ -29,7 +29,6 @@ import os
 
 sys.path.append(os.path.join(os.path.split(__file__)[0], '..', 'data'))
 from data import load_data
-from data import load_cifar
 
 import matplotlib.pyplot as plt
 
@@ -57,6 +56,8 @@ def test_pca(dataset='mnist.pkl.gz'):
         if i > j:
             continue
 
+        print('... computing principal components for combination %d / %d ' %(i, j))
+
         X_ = train_set_x[(train_set_y == i) + (train_set_y == j)]
         y_ = train_set_y[(train_set_y == i) + (train_set_y == j)]
 
@@ -77,10 +78,12 @@ def test_pca(dataset='mnist.pkl.gz'):
 
     plt.tight_layout()
     if dataset == 'mnist.pkl.gz':
-        plt.savefig('scatterplotMNIST.png', format = 'png', dpi = 500)
+        plt.savefig(os.path.join(os.path.split(__file__)[0], 'scatterplotMNIST.png'), format = 'png')
     elif(dataset == 'cifar-10-python.tar.gz'):
-        plt.savefig('scatterplotCIFAR.png', format = 'png', dpi = 5000)
+        plt.savefig(os.path.join(os.path.split(__file__)[0], 'scatterplotCIFAR.png'), format = 'png')
 
 if __name__ == "__main__":
+    # TODO: rewrite this, so it takes the name of the data set from the command line
+    # TODO: seperate training and plotting
     test_pca(dataset = 'mnist.pkl.gz')
     test_pca(dataset = 'cifar-10-python.tar.gz')
