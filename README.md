@@ -15,6 +15,7 @@ Individual student repository for the 2016 Summer semester course Deep Learning 
 ![pca on MNIST](latent/scatterplotMNIST.png)
 ![pca on CIFAR-10](latent/scatterplotCIFAR.png)
 ![receptive fields sparse autoencoder](latent/autoencoderfilter.png)
+![receptive fields sparse autoencoder](latent/autoencoderrec.png)
 ## t-SNE
 ![embeddings](tsne/embeddings.png)
 ## k-Mean
