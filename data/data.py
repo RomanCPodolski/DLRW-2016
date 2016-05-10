@@ -53,7 +53,7 @@ def load_cifar(dataset, shared = False):
         print('Downloading data from %s' % origin)
         urllib.request.urlretrieve(origin, dataset)
 
-    print('... loading data')
+    print('... loading cifar-10 grayscale')
 
     with tarfile.open(dataset, 'r') as f:
         try:
@@ -139,7 +139,7 @@ def load_mnist(dataset, shared = False):
         print('Downloading data from %s' % origin)
         urllib.request.urlretrieve(origin, dataset)
 
-    print('... loading data')
+    print('... loading mnist')
 
     with gzip.open(dataset, 'rb') as f:
         try:
