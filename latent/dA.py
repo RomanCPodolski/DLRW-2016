@@ -282,7 +282,7 @@ class dA(object):
         # return (cost, gparams)
 
 
-def train(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch_size=600, n_hidden = 800, optimizer = 'rmsprop', sparsity_lambda = 0.08, corruption_level = .3):
+def train(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch_size=600, n_hidden = 800, optimizer = 'gd', sparsity = 0.08, corruption = 0.3):
     """
     This demo is tested on MNIST
 
@@ -330,8 +330,8 @@ def train(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch_s
         W = theano.shared(value = Weights, name = 'W', borrow = True),
         bvis = theano.shared(value = bias_visible, name = "b'", borrow = True),
         bhid = theano.shared(value = bias_hidden, name = 'b', borrow = True),
-        corruption_level = corruption_level,
-        sparsity_lambda = sparsity_lambda
+        corruption_level = corruption,
+        sparsity_lambda = sparsity
     )
 
     loss = theano.function([x], da.cost)
@@ -397,11 +397,11 @@ def plot(element, dataset = 'mnist.pkl.gz'):
         test_set_x, test_set_y   = datasets[2]
 
         rec = theano.function([autoencoder.x], T.nnet.sigmoid(T.dot(autoencoder.y, autoencoder.W_prime) + autoencoder.b_prime))
-        image = Image.fromarray(tile_raster_images(X = rec(test_set_x[:100]), img_shape = (28, 28), tile_shape= (10, 10), tile_spacing=(1, 1)))
+        image = Image.fromarray(tile_raster_images(X = rec(test_set_x[:100]), img_shape = (28, 28), tile_shape= (5, 20), tile_spacing=(1, 1)))
         image.save(os.path.join(os.path.split(__file__)[0], 'autoencoderrec.png'))
     elif element == 'repflds':
         print('... plot receptive fields')
-        image = Image.fromarray(tile_raster_images(X=autoencoder.W.get_value(borrow = True).T, img_shape = (28, 28), tile_shape= (10, 10), tile_spacing=(1, 1)))
+        image = Image.fromarray(tile_raster_images(X=autoencoder.W.get_value(borrow = True).T, img_shape = (28, 28), tile_shape = (5, 20), tile_spacing=(1, 1)))
         image.save(os.path.join(os.path.split(__file__)[0],'autoencoderfilter.png'))
     else:
         print("dot't know how to plot %" % element) 
