@@ -82,6 +82,31 @@ def test_pca(dataset='mnist.pkl.gz'):
     elif(dataset == 'cifar-10-python.tar.gz'):
         plt.savefig(os.path.join(os.path.split(__file__)[0], 'scatterplotCIFAR.png'), format = 'png')
 
+def main(argv):
+    if len(argv) < 2:
+        print('please call with at least 2 arguments')
+        return -1
+
+    if argv[0] == 'cifar':
+        d = 'cifar-10-python.tar.gz'
+    elif argv[0] == 'mnist':
+        d = 'mnist.pkl.gz'
+    else:
+        print('unkown dataset %s' % argv[0])
+        return -1
+
+    command = argv[1]
+
+    if command == 'train':
+        return train(dataset=d)
+
+    elif command == 'plot':
+        return plot()
+    else: 
+        print('unknown command: %' % command) 
+        print("either use 'train' or 'plot'") 
+        return -1
+
 if __name__ == "__main__":
     # TODO: rewrite this, so it takes the name of the data set from the command line
     # TODO: seperate training and plotting

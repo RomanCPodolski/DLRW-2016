@@ -150,18 +150,17 @@ def train(dataset = 'cifar-10-python.tar.gz', n_classes = 500, max_iter = 10):
         pickle.dump(classifier, f)
 
 def plot():
+    print('... ploting the receptive fields')
     classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
-    f_pca, axes  = plt.subplots(20, 25)
+    f_pca, axes  = plt.subplots(20, 25, subplot_kw = {'xticks': [], 'yticks': []})
     centroids = []
     for i in range(classifier.k):
-        print(np.array(classifier.D.get_value())[:,i].shape)
         centroids.append(np.reshape(np.array(classifier.D.get_value())[:,i], (32, 32)))
 
     for ax, centroid in zip(axes.flat, centroids):
-        print(centroid)
+        ax.imshow(centroid, cmap=plt.cm.gray, interpolation = 'none')
 
-    # plt.savefig(os.path.join(os.path.split(__file__)[0], 'repflds.png'), format = 'png')
-    
+    plt.savefig(os.path.join(os.path.split(__file__)[0], 'repflds.png'), format = 'png')
 
 def main(argv):
 

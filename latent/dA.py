@@ -45,7 +45,7 @@ from theano.tensor.shared_randomstreams import RandomStreams
 
 sys.path.append(os.path.join(os.path.split(__file__)[0], '..', 'data'))
 from data import load_data
-from data import load_cifar
+from utils import tile_raster_images
 
 # from utils import tile_raster_images
 
@@ -93,7 +93,10 @@ class dA(object):
         n_hidden=500,
         W=None,
         bhid=None,
-        bvis=None
+        bvis=None,
+        corruption_level = 0.,
+        sparsity_lambda = 0,
+        learning_rate = 0.13
     ):
         """
         Initialize the dA class by specifying the number of visible units (the
@@ -202,6 +205,17 @@ class dA(object):
 
         self.params = [self.W, self.b, self.b_prime]
 
+        self.tilde_x = self.get_corrupted_input(self.x, corruption_level)
+        self.y = self.get_hidden_values(self.tilde_x)
+        self.z = self.get_reconstructed_input(self.y)
+        self.L = - T.sum(self.x * T.log(self.z) + (1 - self.x) * T.log(1 - self.z), axis=1)
+        self.L1_hidden_penalty = sparsity_lambda * self.y.mean(axis = 0).sum()
+        self.cost = T.mean(self.L) + self.L1_hidden_penalty
+
+        # compute the gradients of the cost of the `dA` with respect
+        # to its parameters
+        self.gparams = T.grad(self.cost, self.params)
+
     def get_corrupted_input(self, input, corruption_level):
         """This function keeps ``1-corruption_level`` entries of the inputs the
         same and zero-out randomly selected subset of size ``coruption_level``
@@ -224,9 +238,7 @@ class dA(object):
                 correctly as it only support float32 for now.
 
         """
-        return self.theano_rng.binomial(size=input.shape, n=1,
-                                        p=1 - corruption_level,
-                                        dtype=theano.config.floatX) * input
+        return self.theano_rng.binomial(size=input.shape, n=1, p=1 - corruption_level, dtype=theano.config.floatX) * input
 
     def get_hidden_values(self, input):
         """ Computes the values of the hidden layer """
@@ -239,37 +251,38 @@ class dA(object):
         """
         return T.nnet.sigmoid(T.dot(hidden, self.W_prime) + self.b_prime)
 
-    def get_cost_updates(self, corruption_level, learning_rate):
-        """ This function computes the cost and the updates for one trainng
-        step of the dA """
+    # def get_cost_updates(self, corruption_level,sparsity_lambda, learning_rate):
+        # """ This function computes the cost and the updates for one trainng
+        # step of the dA """
 
-        tilde_x = self.get_corrupted_input(self.x, corruption_level)
-        y = self.get_hidden_values(tilde_x)
-        z = self.get_reconstructed_input(y)
-        # note : we sum over the size of a datapoint; if we are using
-        #        minibatches, L will be a vector, with one entry per
-        #        example in minibatch
-        L = - T.sum(self.x * T.log(z) + (1 - self.x) * T.log(1 - z), axis=1)
-        # note : L is now a vector, where each element is the
-        #        cross-entropy cost of the reconstruction of the
-        #        corresponding example of the minibatch. We need to
-        #        compute the average of all these to get the cost of
-        #        the minibatch
-        cost = T.mean(L)
+        # tilde_x = self.get_corrupted_input(self.x, corruption_level)
+        # y = self.get_hidden_values(tilde_x)
+        # z = self.get_reconstructed_input(y)
+        # # note : we sum over the size of a datapoint; if we are using
+        # #        minibatches, L will be a vector, with one entry per
+        # #        example in minibatch
+        # L = - T.sum(self.x * T.log(z) + (1 - self.x) * T.log(1 - z), axis=1)
+        # # note : L is now a vector, where each element is the
+        # #        cross-entropy cost of the reconstruction of the
+        # #        corresponding example of the minibatch. We need to
+        # #        compute the average of all these to get the cost of
+        # #        the minibatch
+        # L1_hidden_penalty = sparsity_lambda * y.mean(axis = 0).sum()
+        # cost = T.mean(L) + L1_hidden_penalty
 
-        # compute the gradients of the cost of the `dA` with respect
-        # to its parameters
-        gparams = T.grad(cost, self.params)
-        # generate the list of updates
-        # updates = [
-            # (param, param - learning_rate * gparam)
-            # for param, gparam in zip(self.params, gparams)
-        # ]
+        # # compute the gradients of the cost of the `dA` with respect
+        # # to its parameters
+        # gparams = T.grad(cost, self.params)
+        # # generate the list of updates
+        # # updates = [
+            # # (param, param - learning_rate * gparam)
+            # # for param, gparam in zip(self.params, gparams)
+        # # ]
 
-        return (cost, gparams)
+        # return (cost, gparams)
 
 
-def test_dA(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch_size=20, n_hidden = 500, optimizer = 'gd', output_folder='dA_plots'):
+def train(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch_size=600, n_hidden = 800, optimizer = 'rmsprop', sparsity_lambda = 0.08, corruption_level = .3):
     """
     This demo is tested on MNIST
 
@@ -286,10 +299,13 @@ def test_dA(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch
     """
     datasets = load_data(dataset)
     train_set_x, train_set_y = datasets[0]
+    valid_set_x, valid_set_y = datasets[1]
+    test_set_x, test_set_y   = datasets[2]
 
     # create climin templates
     tmpl = [(28 * 28, n_hidden), n_hidden, 28 * 28]
     flat, (Weights, bias_hidden, bias_visible) = climin.util.empty_with_views(tmpl)
+    climin.initialize.randomize_normal(flat, 0, 0.1)
 
     print('... building the model')
 
@@ -297,10 +313,6 @@ def test_dA(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch
     # allocate symbolic variables for the data
     x = T.matrix('x')  # the data is presented as rasterized images
     # end-snippet-2
-
-    if not os.path.isdir(output_folder):
-        os.makedirs(output_folder)
-    os.chdir(output_folder)
 
     ####################################
     # BUILDING THE MODEL NO CORRUPTION #
@@ -317,14 +329,13 @@ def test_dA(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch
         n_hidden = n_hidden,
         W = theano.shared(value = Weights, name = 'W', borrow = True),
         bvis = theano.shared(value = bias_visible, name = "b'", borrow = True),
-        bhid = theano.shared(value = bias_hidden, name = 'b', borrow = True)
+        bhid = theano.shared(value = bias_hidden, name = 'b', borrow = True),
+        corruption_level = corruption_level,
+        sparsity_lambda = sparsity_lambda
     )
 
-    cost, updates = da.get_cost_updates(corruption_level=0., learning_rate = learning_rate)
-
-    cost_da = theano.function([x], cost)
-    print(updates)
-    g_params_da = theano.function([x], updates)
+    loss = theano.function([x], da.cost)
+    g_params_da = theano.function([x], da.gparams)
 
     def d_loss_wrt_pars(parameters, inputs, targets):
         g_W, g_b_hidden, g_b_vis,  = g_params_da(inputs)
@@ -345,10 +356,10 @@ def test_dA(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch
         opt = cli.GradientDescent(flat, d_loss_wrt_pars, step_rate = learning_rate, momentum = .95, args=args)
     elif optimizer == 'rmsprop':
         print('... using rmsprop')
-        opt = cli.RmsProp(flat, d_loss_wrt_pars, step_rate= learning_rate, decay=0.9, args=args)
+        opt = cli.RmsProp(flat, d_loss_wrt_pars, step_rate = learning_rate, decay = 0.9, args=args)
     else:
         print('unknown optimizer')
-        sys.exit(-1)
+        return -1
 
     ############
     # TRAINING #
@@ -360,7 +371,10 @@ def test_dA(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch
         epoch = iter // n_train_batches + 1
 
         if (iter + 1) % n_train_batches == 0:
-            print('Training epoch %d, cost ' % epoch, cost_da(train_set_x))
+            print('training epoch %d, cost %f ...' % (epoch, loss(train_set_x)))
+
+        if epoch >= training_epochs:
+            break
 
     end_time = timeit.default_timer()
 
@@ -369,13 +383,51 @@ def test_dA(learning_rate=0.1, training_epochs=15, dataset='mnist.pkl.gz', batch
     print(('The no corruption code for file ' +
            os.path.split(__file__)[1] +
            ' ran for %.2fm' % ((training_time) / 60.)), file=sys.stderr)
-    image = Image.fromarray(
-        tile_raster_images(X=da.W.get_value(borrow=True).T,
-                           img_shape=(28, 28), tile_shape=(10, 10),
-                           tile_spacing=(1, 1)))
-    image.save('filters_corruption_0.png')
 
-    os.chdir('../')
+    with open(os.path.join(os.path.split(__file__)[0], 'autoencoder.pkl'), 'wb') as f:
+        pickle.dump(da, f)
+    return 1
+
+def plot(element, dataset = 'mnist.pkl.gz'):
+    autoencoder = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'autoencoder.pkl')))
+    if element == 'reconstructions':
+        print('... plot reconstructions')
+
+        datasets = load_data(dataset)
+        test_set_x, test_set_y   = datasets[2]
+
+        rec = theano.function([autoencoder.x], T.nnet.sigmoid(T.dot(autoencoder.y, autoencoder.W_prime) + autoencoder.b_prime))
+        image = Image.fromarray(tile_raster_images(X = rec(test_set_x[:100]), img_shape = (28, 28), tile_shape= (10, 10), tile_spacing=(1, 1)))
+        image.save(os.path.join(os.path.split(__file__)[0], 'autoencoderrec.png'))
+    elif element == 'repflds':
+        print('... plot receptive fields')
+        image = Image.fromarray(tile_raster_images(X=autoencoder.W.get_value(borrow = True).T, img_shape = (28, 28), tile_shape= (10, 10), tile_spacing=(1, 1)))
+        image.save(os.path.join(os.path.split(__file__)[0],'autoencoderfilter.png'))
+    else:
+        print("dot't know how to plot %" % element) 
+        print("either use 'reconstructions' or 'repflds'") 
+        return -1
+
+def main(argv):
+    if len(argv) < 1:
+        print("please call with at least 1 argument")
+        return -1
+
+    command = argv[0]
+
+    if command == 'train':
+        return train()
+
+    elif command == 'plot':
+        if len(argv) < 2:
+            print('please define what element to plot')
+            return -1
+
+        return plot(argv[1])
+    else: 
+        print('unknown command: %' % command) 
+        print("either use 'train' or 'plot'") 
+        return -1
 
 if __name__ == '__main__':
-    test_dA()
+    sys.exit(main(sys.argv[1:]))

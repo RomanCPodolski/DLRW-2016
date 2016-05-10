@@ -1,5 +1,19 @@
 require 'rake/clean'
 
+SOURCE_FILES = Rake::FileList.new('**/*.py') do |fl|
+  fl.exclude(/^scratch\//)
+  fl.exclude do |f|
+    `git ls-files #{f}`.empty?
+  end
+end
+
+PLOTS = Rake::FileList.new('**/*.png')
+SERIALIZATION = Rake::FileList.new('**/*.pkl')
+DATASETS = Rake::FileList.new('**/*.gz, **/*.tar')
+
+CLEAN << [ SERIALIZATION, DATASETS ]
+CLOBBER << PLOTS
+
 namespace :logreg do
   file 'logreg/best_model.pkl' do
     %x(python logreg/logistic_regression.py train 1>&2)
@@ -22,65 +36,53 @@ namespace :nn do
       %x(python nn/neural_net.py train tanh 1>&2)
     end
 
-    file 'logreg/error_tanh.png' => 'nn/best_model_tanh.pkl' do
+    file 'nn/error_tanh.png' => 'nn/best_model_tanh.pkl' do
       %x(python nn/neural_net.py plot error tanh 1>&2)
     end
 
-    file 'logreg/repflds_tanh.png' => 'nn/best_model_tanh.pkl' do
+    file 'nn/repflds_tanh.png' => 'nn/best_model_tanh.pkl' do
       %x(python nn/neural_net.py plot repfds tanh 1>&2)
     end
   end
-  task tanh: ['repfds_tanh.png', 'error_tanh.png']
+  task tanh: ['nn/repflds_tanh.png', 'nn/error_tanh.png']
 
   namespace :sigmoid do
     file 'nn/best_model_sigmoid.pkl' do
       %x(python nn/neural_net.py train sigmoid 1>&2)
     end
 
-    file 'logreg/error_sigmoid.png' => 'nn/best_model_sigmoid.pkl' do
+    file 'nn/error_sigmoid.png' => 'nn/best_model_sigmoid.pkl' do
       %x(python nn/neural_net.py plot error sigmoid 1>&2)
     end
 
-    file 'logreg/repflds.png' => 'nn/best_model_sigmoid.pkl' do
+    file 'nn/repflds.png' => 'nn/best_model_sigmoid.pkl' do
       %x(python nn/neural_net.py plot repfds sigmoid 1>&2)
     end
   end
-  task sigmoid: ['repfds_sigmoid.png', 'error_sigmoid.png']
+  task sigmoid: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png']
 
   namespace :relu do
     file 'nn/best_model_relu.pkl' do
       %x(python nn/neural_net.py train relu 1>&2)
     end
 
-    file 'logreg/error_relu.png' => 'nn/best_model_relu.pkl' do
+    file 'nn/error_relu.png' => 'nn/best_model_relu.pkl' do
       %x(python nn/neural_net.py plot error relu 1>&2)
     end
 
-    file 'logreg/repflds.png' => 'nn/best_model_relu.pkl' do
+    file 'nn/repflds.png' => 'nn/best_model_relu.pkl' do
       %x(python nn/neural_net.py plot repfds relu 1>&2)
     end
   end
-  task sigmoid: ['repfds_sigmoid.png', 'error_sigmoid.png']
+  task relu: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png']
 end
-task nn: [:tanh, :sigmoid, :relu]
+task nn: ['nn:tanh', 'nn:sigmoid', 'nn:relu']
 
 task :tsne do
   Dir.chdir('tsne')
   %w(python tsne.py 1>&2)
   Dir.chdir('..')
 end
-
-namespace :kmeans do
-  file 'kmeans/best_model.pkl' do
-    %x(python kmeans/kmeans.py train 1>&2)
-  end
-
-  file 'kmeans/repflds.png' => 'kmeans/best_model.pkl' do
-    %x(python kmeans/kmeans.py plot 1>&2)
-  end
-end
-
-task kmeans: 'kmeans/repflds.png'
 
 namespace :latent do
   namespace :pca do
@@ -107,19 +109,32 @@ namespace :latent do
   task pca: ['latent/scatterplotMNIST.png', 'latent/scatterplotCIFAR.png']
 
   namespace :autoencoder do
-    file 'autoencoder.pkl' do
+    file 'latent/autoencoder.pkl' do
       %x(python latent/dA.py train 1>&2)
     end
 
-    file 'latent/autoencoderrec.png' => 'autoencoder.pkl' do
+    file 'latent/autoencoderrec.png' => 'latent/autoencoder.pkl' do
       %x(python latent/dA.py plot reconstructions 1>&2)
     end
 
-    file 'latent/autoencoderfilter.png' => 'autoencoder.pkl' do
+    file 'latent/autoencoderfilter.png' => 'latent/autoencoder.pkl' do
       %x(python latent/dA.py plot repflds 1>&2)
     end
   end
   task autoencoder: ['latent/autoencoderrec.png', 'latent/autoencoderfilter.png']
 end
+
+namespace :kmeans do
+  file 'kmeans/best_model.pkl' do
+    %x(python kmeans/kmeans.py train 1>&2)
+  end
+
+  file 'kmeans/repflds.png' => 'kmeans/best_model.pkl' do
+    %x(python kmeans/kmeans.py plot 1>&2)
+  end
+end
+
+task kmeans: 'kmeans/repflds.png'
+
 
 task default: [:logreg, :nn, :latent, :tsne, :kmeans]

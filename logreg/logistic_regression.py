@@ -89,9 +89,9 @@ class LogisticRegression(object):
         # keep track of model input
         self.input = input
 
-        self.valid_losses = []
-        self.train_losses = []
-        self.test_losses = []
+        self.losses = []
+        self.methadata = None
+        self.optimizer = None
 
     def negative_log_likelihood(self, y):
         """Return the mean of the negative log-likelihood of the prediction
@@ -149,7 +149,7 @@ class LogisticRegression(object):
         else:
             raise NotImplementedError()
 
-def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=600, optimizer='gd'):
+def train(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=600, optimizer='gd'):
 
     datasets = load_data(dataset)
 
@@ -273,7 +273,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
         if ( iter + 1 ) % validation_frequency == 0:
             # compute zero-one loss on validation set
             validation_loss = zero_one_loss(valid_set_x, valid_set_y)
-            classifier.valid_losses.append([epoch, validation_loss])
+            valid_losses.append([epoch, validation_loss])
             # train_losses.append(zero_one_loss(train_set_x, train_set_y))
 
             print(
@@ -293,7 +293,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
                 best_validation_loss = validation_loss
                 # test it on the test set
                 test_loss = zero_one_loss(test_set_x, test_set_y)
-                classifier.test_losses.append([epoch, test_loss])
+                test_losses.append([epoch, test_loss])
 
                 print(
                         '    epoch %i, minibatch %i/%i, test error of best model %f %%' %
@@ -305,9 +305,6 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
                             )
                         )
 
-                with open('best_model_logreg_'+optimizer+'.pkl', 'wb') as f:
-                    pickle.dump(classifier, f)
-
         if patience <= iter or epoch >= n_epochs:
             break
 
@@ -317,10 +314,14 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl
     print('The code run for %d epochs, with %f epochs/sec' % (epoch, 1. * epoch / (end_time - start_time)))
     print(('The code for file ' + os.path.split(__file__)[1] + ' ran for %.1fs' % ((end_time - start_time))), file=sys.stderr)
 
-    losses = (np.asarray(train_losses), np.asarray(valid_losses), np.asarray(test_losses))
-    methadata = (best_validation_loss * 100., test_loss * 100., epoch, 1. * epoch / (end_time - start_time), end_time - start_time)
+    classifier.methadata = (best_validation_loss * 100., test_loss * 100., epoch, 1. * epoch / (end_time - start_time), end_time - start_time)
+    classifier.losses = (np.asarray(train_losses), np.asarray(valid_losses), np.asarray(test_losses))
+    classifier.optimizer = optimizer
 
-    return classifier, losses, methadata 
+    with open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl'), 'wb') as f:
+        pickle.dump(classifier, f)
+
+    return 1 
 
 def predict():
     """
@@ -346,25 +347,9 @@ def predict():
     print("Predicted values for the first 10 examples in test set:")
     print(predicted_values)
 
-def main(argv):
+def plot_error():
+    classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
 
-    if len(argv) < 1:
-        print("please call with at least 1 argument")
-        return -1
-
-    command = argv[0]
-
-    if command == 'train':
-        return train()
-
-    elif command == 'plot':
-        return plot()
-    else: 
-        print('unknown command: %' % command) 
-        print("either use 'train' or 'plot'") 
-        return -1
-
-if __name__ == "__main__":
     optimizer_names = {
             'gd': 'Gradient Descent',
             'bfgs': 'Quasi-Newton BFGS',
@@ -376,37 +361,79 @@ if __name__ == "__main__":
             'adadelta': 'Adadelta',
             }
 
-    for o in ['gd', 'bfgs', 'lbfgs', 'nlcg', 'rmsprop', 'rprop', 'adam', 'adadelta']:
-    # for o in ['gd', 'rmsprop', 'rprop', 'adam', 'adadelta']:
+    f_error = plt.figure()
+    train_loss, valid_loss, test_loss = classifier.losses
+    best_validation_loss, best_test_loss, epochs, epochs_pro_second, time_trained = classifier.methadata
 
-        f_error = plt.figure()
-        classifier, losses, methadata = sgd_optimization_mnist(n_epochs = 1000, optimizer=o)
-        train_loss, valid_loss, test_loss = losses
-        best_validation_loss, best_test_loss, epochs, epochs_pro_second, time_trained = methadata
+    plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
+    plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
 
-        plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-        plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
+    plt.legend()
 
-        plt.legend()
+    plt.title("Error %s with best validation score of %f %%,\n test performance %f %%, after %.1fs " % (optimizer_names[classifier.optimizer], best_validation_loss, best_test_loss, time_trained))
+    plt.savefig(os.path.join(os.path.split(__file__)[0], 'error.png'))
 
-        plt.title('Error ' + optimizer_names[o] + " with best validation score of %f %%,\n test performance %f %%, after %.1fs " % (best_validation_loss, best_test_loss, time_trained))
-        plt.savefig('errors_'+o+'.png')
+    return 1
 
-        f_repfields, axes = plt.subplots(2, 5, subplot_kw = {'xticks': [], 'yticks': []})
-        f_repfields.subplots_adjust(hspace = 0.3, wspace = 0.05)
-        f_repfields.canvas.set_window_title('Receptive Fields for Logistic Regression')
+def plot_repflds():
+    classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
 
-        repfield = []
-        for i in range(10):
-            repfield.append(np.reshape(np.array(classifier.W.get_value())[:,i], (28, 28)))
+    optimizer_names = {
+            'gd': 'Gradient Descent',
+            'bfgs': 'Quasi-Newton BFGS',
+            'lbfgs': 'Quasi-Newton L-BFGS',
+            'nlcg': 'Non-Linear Conjugate Gradient',
+            'rmsprop': 'RMSPROP',
+            'rprop': 'Resilient Propagation',
+            'adam': 'Adam',
+            'adadelta': 'Adadelta',
+            }
 
-        i = 0
-        for ax, rep in zip(axes.flat, repfield):
-            ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
-            ax.set_title('Weights ' + str(i))
-            i = i + 1
+    f_repfields, axes = plt.subplots(2, 5, subplot_kw = {'xticks': [], 'yticks': []})
+    f_repfields.subplots_adjust(hspace = 0.3, wspace = 0.05)
+    f_repfields.canvas.set_window_title('Receptive Fields for Logistic Regression')
 
-        f_repfields.subplots_adjust(hspace=0.03, wspace=0.05)
+    repfield = []
+    for i in range(10):
+        repfield.append(np.reshape(np.array(classifier.W.get_value())[:,i], (28, 28)))
 
-        f_repfields.suptitle('Receptive Fields for Logisitc Regression with ' + optimizer_names[o] + ' on MNIST')
-        plt.savefig('repfields_'+o+'.png')
+    i = 0
+    for ax, rep in zip(axes.flat, repfield):
+        ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
+        ax.set_title('Weights ' + str(i))
+        i = i + 1
+
+    f_repfields.subplots_adjust(hspace=0.03, wspace=0.05)
+
+    f_repfields.suptitle('Receptive Fields for Logisitc Regression with ' + optimizer_names[classifier.optimizer] + ' on MNIST')
+    plt.savefig(os.path.join(os.path.split(__file__)[0], 'repflds.png'))
+
+def main(argv):
+
+    if len(argv) < 1:
+        print("please call with at least 1 argument")
+        return -1
+
+    command = argv[0]
+
+    if command == 'train':
+        return train(optimizer = 'adam')
+
+    elif command == 'plot':
+        p = argv[1]
+        if p == 'error':
+            return plot_error()
+        elif p == 'repflds':
+            return plot_repflds()
+        else:
+            print("don't know how to plot %" % p) 
+            print("either use 'error' or 'repflds'") 
+            return -1
+
+    else: 
+        print('unknown command: %' % command) 
+        print("either use 'train' or 'plot'") 
+        return -1
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

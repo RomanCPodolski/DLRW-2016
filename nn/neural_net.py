@@ -36,7 +36,7 @@ import sys
 import timeit
 
 sys.path.append(os.path.join(os.path.split(__file__)[0], '..', 'logreg'))
-from logistic_sgd import LogisticRegression
+from logistic_regression import LogisticRegression
 
 sys.path.append(os.path.join(os.path.split(__file__)[0], '..', 'data'))
 from data import load_data
@@ -425,7 +425,35 @@ def test_mlp(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 10
 
     return classifier, losses, methadata
 
+def main(argv):
+
+    if len(argv) < 1:
+        print("please call with at least 1 argument")
+        return -1
+
+    command = argv[0]
+
+    if command == 'train':
+        return train(optimizer = 'adam')
+
+    elif command == 'plot':
+        p = argv[1]
+        if p == 'error':
+            return plot_error()
+        elif p == 'repflds':
+            return plot_repflds()
+        else:
+            print("don't know how to plot %" % p) 
+            print("either use 'error' or 'repflds'") 
+            return -1
+
+    else: 
+        print('unknown command: %' % command) 
+        print("either use 'train' or 'plot'") 
+        return -1
+
 if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
     # f = plt.figure()
     # classifier, losses, methadata = test_mlp(activation = T.tanh, optimizer = 'rmsprop')
     # train_loss, valid_loss, test_loss = losses
