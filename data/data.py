@@ -15,11 +15,37 @@ import theano
 import theano.tensor as T
 import numpy
 
-def load_data(dataset):
+def shared_dataset(data_xy, borrow=True):
+    """ Function that loads the dataset into shared variables
+
+    The reason we store our dataset in shared variables is to allow
+    Theano to copy it into the GPU (when code is run on GPU).
+    Since copying data into the GPU is slow, copying a minibatch everytime
+    it is needed (the default behaviour if the data is not a shared
+    variable) would lead to a large decrease in performance
+    """
+    data_x, data_y = data_xy
+    shared_x = theano.shared(numpy.asarray(data_x,
+        dtype=theano.config.floatX), borrow=borrow)
+
+    shared_y = theano.shared(numpy.asarray(data_y,
+        dtype=theano.config.floatX), borrow=borrow)
+
+    # When storing data on the GPU it has to be stored as floats
+    # therefore we will store the labels as ``floatX`` as well
+    # (``shared_x`` does exactly that). But during our computations
+    # we need them as ints (we use labels as index, and if they are
+    # floats it doesnt make sense) therefore instead of returning
+    # ``shared_y`` we will have to cast it to int. This little hack
+    # lets us get around this issue
+    # return shared_x, T.cast(shared_y, 'int32')
+    return shared_x, shared_y
+
+def load_data(dataset, shared = False):
     if dataset == 'cifar-10-python.tar.gz':
-        rv = load_cifar(dataset)
+        rv = load_cifar(dataset, shared)
     elif dataset == 'mnist.pkl.gz':
-        rv = load_mnist(dataset)
+        rv = load_mnist(dataset, shared)
 
     return rv
 
@@ -68,32 +94,6 @@ def load_cifar(dataset, shared = False):
             test_set = [batch_test['data'][:,:1024], numpy.asarray(batch_test['labels'])] 
         except:
             train_set, valid_set, test_set = pickle.load(f)
-
-    def shared_dataset(data_xy, borrow=True):
-        """ Function that loads the dataset into shared variables
-
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        it is needed (the default behaviour if the data is not a shared
-        variable) would lead to a large decrease in performance
-        """
-        data_x, data_y = data_xy
-        shared_x = theano.shared(numpy.asarray(data_x,
-            dtype=theano.config.floatX), borrow=borrow)
-
-        shared_y = theano.shared(numpy.asarray(data_y,
-            dtype=theano.config.floatX), borrow=borrow)
-
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_x`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesnt make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets us get around this issue
-        # return shared_x, T.cast(shared_y, 'int32')
-        return shared_x, shared_y
 
     if shared:
         test_set_x, test_set_y = shared_dataset(test_set)
@@ -152,32 +152,6 @@ def load_mnist(dataset, shared = False):
     # numpy.ndarray of 1 dimension (vector) that has the same length as
     # the number of rows in the input. It should give the target 
     # to the example whith the same index in the input.
-
-    def shared_dataset(data_xy, borrow=True):
-        """ Function that loads the dataset into shared variables
-
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        it is needed (the default behaviour if the data is not a shared
-        variable) would lead to a large decrease in performance
-        """
-        data_x, data_y = data_xy
-        shared_x = theano.shared(numpy.asarray(data_x,
-            dtype=theano.config.floatX), borrow=borrow)
-
-        shared_y = theano.shared(numpy.asarray(data_y,
-            dtype=theano.config.floatX), borrow=borrow)
-
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_x`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesnt make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets us get around this issue
-        # return shared_x, T.cast(shared_y, 'int32')
-        return shared_x, shared_y
 
     if shared:
         test_set_x, test_set_y = shared_dataset(test_set)
