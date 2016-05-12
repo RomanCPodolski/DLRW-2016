@@ -50,7 +50,6 @@ to predict some digits from the mnist dataset.
 
 [logreg/logistic_regression.py](logreg/logistic_regression.py) implements
 * Gradient descent (`gd`)
-* Quasi-Newton l-BFGS (`lbfgs`)
 * Non-Linear Conjugate Gradient (`nlcg`)
 * RMSPROP (`rmsprop`)
 * Resilient Propagation (`rprop`)
@@ -75,9 +74,24 @@ I plotted only the validation and test loss, since omitting calculating the trai
 
 Training of the model is stopped if the improvement of the errors loss over a number validation steps is not considered significant. The number of validations to wait until stoppage is increased, based on the iteration, in which a significant improvement appeared, times a freely-chosen factor. Regardless of improvement of error loss look at a minimum number of training data regardless.
 
-**Problem 13:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 13:** Fine tune your implementation until you achieve an error rate of about 7% on the test set. One approach might be to augment the training set by including transformed (slightly rotated, elastically deformed) versions of the digits from the vanilla training set. Do not spend too much time on this problem, since we have not verified that this error rate is achievable using logistic regression.
 
-**Bonus Question:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+| Optimizer                     | Runtime        | Best validation loss | Best test loss |
+| :---------------------------- | :------------- | :------------------- | :------------- |
+| Gradient descent              | 34.3 s         | 7.07 %               | 7.48 %         |
+| RMSPROP                       | 250.5 s        | 6.75 %               | 7.46 %         |
+| Resilient Propagation         | 35.6 s         | 12.15 %              | 12.55 %        |
+| Adam                          | 152.0          | 6.81 %               | 7.14 %         |
+| Adadelta                      | 32.8 s         | 7.66 %               | 7.85 %         |
+
+
+**Bonus Question:** Why is the last problem statement actually very bad scientific practice?
+
+> Acquiring enough labeled data to train such models is difficult[...]. In simple settings, such as hand-written character recognition, it is possible to generate lots of labeled data by making modified copies of a small manually labeled training set [...], but it seems unlikely that this approach will scale to complex scenes.
+>
+> Chapter 28.2 Machine Learning A probabilistic perspective - Kevin P. Murphy
+
+Further, including modified data in the training set, can propagate unnatural characteristics in the dataset. If this feature is significant enough in a class, it is possible that the weigh of this feature is strengthen over a reasonable amount. A better approach would be to use a generative model. 
 
 ## Two-layer neural network
 To run the code, do

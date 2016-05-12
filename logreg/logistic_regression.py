@@ -420,7 +420,7 @@ def main(argv):
             print("please define a optimizer to use")
             return -1
 
-        return train(argv[0])
+        return train(optimizer = argv[1])
 
     elif command == 'plot':
         return plot(argv[1])

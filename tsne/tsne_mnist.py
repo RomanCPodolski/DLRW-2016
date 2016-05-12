@@ -59,6 +59,7 @@ def train(dataset = 'mnist.pkl.gz'):
     results = results / np.max(results, axis = 0)
 
 def plot(dataset = 'mnist.pkl.gz'):
+    size = 10000
     print('... plotting the results')
     dataset = load_data(dataset)
     data = dataset[0][0].astype('float64')
@@ -67,12 +68,12 @@ def plot(dataset = 'mnist.pkl.gz'):
     results = results - np.min(results, axis = 0)
     results = results / np.max(results, axis = 0)
 
-    out = np.zeros((8000, 8000), dtype = 'uint8')
+    out = np.zeros((size, size), dtype = 'uint8')
     out[...] = 255
     
     for i in xrange(data.shape[0]):
-        xpos = int(results[i][0] * (8000 - 1000) + 500)
-        ypos = int(results[i][1] * (8000 - 1000) + 500)
+        xpos = int(results[i][0] * (size - 1000) + 500)
+        ypos = int(results[i][1] * (size - 1000) + 500)
         pic = scale_to_unit_interval(data[i].reshape((28, 28)))
         out[xpos:xpos + 28, ypos: ypos + 28] = pic * 255
 
