@@ -76,10 +76,10 @@ def plot(dataset = 'mnist.pkl.gz'):
         pic = scale_to_unit_interval(data[i].reshape((28, 28)))
         out[xpos:xpos + 28, ypos: ypos + 28] = pic * 255
 
-    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], 'tsne_minst.png'))
+    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], 'tsne_mnist.png'))
 
     image = Image.fromarray(out)
-    image.save(os.path.join(os.path.split(__file__)[0], 'tsne_minst.png'))
+    image.save(os.path.join(os.path.split(__file__)[0], 'tsne_mnist.png'))
 
 def main(argv):
     if len(argv) < 1:
