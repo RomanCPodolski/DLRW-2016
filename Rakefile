@@ -16,7 +16,7 @@ CLOBBER << PLOTS
 
 namespace :logreg do
   file 'logreg/best_model.pkl' do
-    %x(python logreg/logistic_regression.py train 1>&2)
+    %x(python logreg/logistic_regression.py train adam 1>&2)
   end
 
   file 'logreg/repflds.png' => 'logreg/best_model.pkl' do
@@ -26,9 +26,13 @@ namespace :logreg do
   file 'logreg/error.png' => 'logreg/best_model.pkl' do
     %x(python logreg/logistic_regression.py plot error 1>&2)
   end
+
+  task :predict => 'logreg/best_model.pkl' do
+    %x(python logreg/logistic_regression.py predict 1>&2)
+  end
 end
 
-task logreg: ['logreg/repflds.png', 'logreg/error.png']
+task logreg: ['logreg/repflds.png', 'logreg/error.png', 'logreg:predict']
 
 namespace :nn do
   namespace :tanh do
@@ -79,29 +83,19 @@ end
 task nn: ['nn:tanh', 'nn:sigmoid', 'nn:relu']
 
 namespace :tsne do
-  file 'tsne/bh_tsne.tar.gz' do
-    puts 'load '
-    %x(wget some_url > tsne/bh_tsne.tar.gz)
-  end
-
-  file 'tsne/bh_tsne' => 'tsne/bh_tsne.tar.gz' do
-    puts 'unpack '
-    %x(tar -xf tsne/bh_tsne.tar.gz -C tsne)
+  file 'tsne/bh_tsne' do
+    %x(curl https://lvdmaaten.github.io/tsne/code/bh_tsne.tar.gz | tar xz -C tsne)
   end
 
   file 'tsne/bh_tsne/bh_tsne' => 'tsne/bh_tsne' do
-    puts 'compile '
     %x(g++ tsne/bh_tsne/sptree.cpp tsne/bh_tsne/tsne.cpp -o tsne/bh_tsne/bh_tsne -O2)
   end
 
   file 'tsne/data.pkl' => 'tsne/bh_tsne/bh_tsne' do
-    puts 'train '
     %x(python tsne/tsne_mnist.py train 1>&2)
   end
 
-  desc 'shit'
   file 'tsne/tsne_mnist.png' do
-    puts 'plot '
     %x(python tsne/tsne_mnist.py plot 1>&2)
   end
 end

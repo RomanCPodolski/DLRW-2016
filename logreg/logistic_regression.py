@@ -17,6 +17,7 @@ import timeit
 sys.path.append(os.path.join(os.path.split(__file__)[0], '..', 'data'))
 
 from data import load_data
+from utils import tile_raster_images
 
 import numpy as np
 
@@ -29,6 +30,11 @@ import climin.util
 import itertools
 
 import matplotlib.pyplot as plt
+
+try:
+    import PIL.Image as Image
+except ImportError:
+    import Image
 
 class LogisticRegression(object):
     """Multi-class Logistic Regression Class
@@ -149,7 +155,7 @@ class LogisticRegression(object):
         else:
             raise NotImplementedError()
 
-def train(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=600, optimizer='gd'):
+def train(learning_rate = 0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=600, optimizer='gd'):
 
     datasets = load_data(dataset)
 
@@ -220,7 +226,7 @@ def train(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=
 
     if optimizer == 'gd':
         print('... using gradient descent')
-        opt = cli.GradientDescent(flat, d_loss_wrt_pars, step_rate=0.1, momentum=.95, args=args)
+        opt = cli.GradientDescent(flat, d_loss_wrt_pars, step_rate = 0.13, momentum=.95, args=args)
     elif optimizer == 'bfgs':
         print('... using using quasi-newton BFGS')
         opt = cli.Bfgs(flat, loss, d_loss_wrt_pars, args=args)
@@ -232,7 +238,7 @@ def train(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=
         opt = cli.NonlinearConjugateGradient(flat, loss, d_loss_wrt_pars, args=args)
     elif optimizer == 'rmsprop':
         print('... using rmsprop')
-        opt = cli.RmsProp(flat, d_loss_wrt_pars, step_rate=1e-4, decay=0.9, args=args)
+        opt = cli.RmsProp(flat, d_loss_wrt_pars, step_rate = learning_rate, decay=0.9, args=args)
     elif optimizer == 'rprop':
         print('... using resilient propagation')
         opt = cli.Rprop(flat, d_loss_wrt_pars, args=args)
@@ -241,7 +247,7 @@ def train(learning_rate=0.13, n_epochs=1000, dataset='mnist.pkl.gz', batch_size=
         opt = cli.Adam(flat, d_loss_wrt_pars, step_rate = 0.0002, decay = 0.99999999, decay_mom1 = 0.1, decay_mom2 = 0.001, momentum = 0, offset = 1e-08, args=args)
     elif optimizer == 'adadelta':
         print('... using adadelta')
-        opt = cli.Adadelta(flat, d_loss_wrt_pars, step_rate=1, decay = 0.9, momentum = .95, offset = 0.0001, args=args)
+        opt = cli.Adadelta(flat, d_loss_wrt_pars, step_rate = learning_rate, decay = 0.9, momentum = .95, offset = 0.0001, args=args)
     else:
         print('unknown optimizer')
         return 1
@@ -330,7 +336,7 @@ def predict():
     """
 
     # loads the saved model
-    classifier = pickle.load(open('best_model.pkl'))
+    classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
 
     # compile a predictor function
     predict_model = theano.function(
@@ -341,41 +347,15 @@ def predict():
     dataset = 'mnist.pkl.gz'
     datasets = load_data(dataset)
     test_set_x, test_set_y = datasets[2]
-    test_set_x = test_set_x.get_value()
+    # test_set_x = test_set_x.get_value()
 
     predicted_values = predict_model(test_set_x[:10])
     print("Predicted values for the first 10 examples in test set:")
     print(predicted_values)
 
-def plot_error():
-    classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
-
-    optimizer_names = {
-            'gd': 'Gradient Descent',
-            'bfgs': 'Quasi-Newton BFGS',
-            'lbfgs': 'Quasi-Newton L-BFGS',
-            'nlcg': 'Non-Linear Conjugate Gradient',
-            'rmsprop': 'RMSPROP',
-            'rprop': 'Resilient Propagation',
-            'adam': 'Adam',
-            'adadelta': 'Adadelta',
-            }
-
-    f_error = plt.figure()
-    train_loss, valid_loss, test_loss = classifier.losses
-    best_validation_loss, best_test_loss, epochs, epochs_pro_second, time_trained = classifier.methadata
-
-    plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
-
-    plt.legend()
-
-    plt.title("Error %s with best validation score of %f %%,\n test performance %f %%, after %.1fs " % (optimizer_names[classifier.optimizer], best_validation_loss, best_test_loss, time_trained))
-    plt.savefig(os.path.join(os.path.split(__file__)[0], 'error.png'))
-
     return 1
 
-def plot_repflds():
+def plot(element):
     classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
 
     optimizer_names = {
@@ -389,24 +369,43 @@ def plot_repflds():
             'adadelta': 'Adadelta',
             }
 
-    f_repfields, axes = plt.subplots(2, 5, subplot_kw = {'xticks': [], 'yticks': []})
-    f_repfields.subplots_adjust(hspace = 0.3, wspace = 0.05)
-    f_repfields.canvas.set_window_title('Receptive Fields for Logistic Regression')
+    if element == 'error':
+        print('... plotting the error')
+        f_error = plt.figure()
+        train_loss, valid_loss, test_loss = classifier.losses
+        best_validation_loss, best_test_loss, epochs, epochs_pro_second, time_trained = classifier.methadata
 
-    repfield = []
-    for i in range(10):
-        repfield.append(np.reshape(np.array(classifier.W.get_value())[:,i], (28, 28)))
+        plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
+        plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
 
-    i = 0
-    for ax, rep in zip(axes.flat, repfield):
-        ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
-        ax.set_title('Weights ' + str(i))
-        i = i + 1
+        plt.legend()
 
-    f_repfields.subplots_adjust(hspace=0.03, wspace=0.05)
+        plt.title("Error %s with best validation score of %f %%,\n test performance %f %%, after %.1fs " % (optimizer_names[classifier.optimizer], best_validation_loss, best_test_loss, time_trained))
+        print('... saving to file ' + os.path.join(os.path.split(__file__)[0], 'error.png'))
+        plt.savefig(os.path.join(os.path.split(__file__)[0], 'error.png'))
 
-    f_repfields.suptitle('Receptive Fields for Logisitc Regression with ' + optimizer_names[classifier.optimizer] + ' on MNIST')
-    plt.savefig(os.path.join(os.path.split(__file__)[0], 'repflds.png'))
+    elif element == 'repflds':
+        import scipy.ndimage
+        print('... plotting the receptive fields')
+
+        magnification = 5
+        repflds = []
+        for i in xrange(10):
+            r = scipy.ndimage.zoom(np.reshape(classifier.W.get_value(borrow = True)[:,i], (28, 28)), magnification, order = 0).flatten()
+            repflds.append(r)
+
+        repflds = np.asarray(repflds)
+
+        image = Image.fromarray(tile_raster_images(X = repflds, img_shape = (28 * magnification, 28 * magnification), tile_shape = (2, 5), tile_spacing=(1, 1)))
+        print('... saving to file ' + os.path.join(os.path.split(__file__)[0], 'repflds.png'))
+        image.save(os.path.join(os.path.split(__file__)[0], 'repflds.png'))
+
+    else:
+        print("don't know how to plot %" % p) 
+        print("either use 'error' or 'repflds'") 
+        return -1
+
+    return 1
 
 def main(argv):
 
@@ -417,22 +416,20 @@ def main(argv):
     command = argv[0]
 
     if command == 'train':
-        return train(optimizer = 'adam')
-
-    elif command == 'plot':
-        p = argv[1]
-        if p == 'error':
-            return plot_error()
-        elif p == 'repflds':
-            return plot_repflds()
-        else:
-            print("don't know how to plot %" % p) 
-            print("either use 'error' or 'repflds'") 
+        if len(argv) < 2:
+            print("please define a optimizer to use")
             return -1
 
+        return train(argv[0])
+
+    elif command == 'plot':
+        return plot(argv[1])
+
+    elif command == 'predict':
+        return predict()
     else: 
         print('unknown command: %' % command) 
-        print("either use 'train' or 'plot'") 
+        print("either use 'train', 'plot' or 'predict'") 
         return -1
 
 if __name__ == "__main__":
