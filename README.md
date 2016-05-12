@@ -30,7 +30,7 @@ $ python logreg/logistic_regression.py plot error
 
 **Problem 8:** Implement multiclass logistic regression in Python using Theano. Use standart gradient descent with minibatches as the initial optimization method. You may follow the tutorial, or, better, write your own implementation from ground up.
 
-The code for multiclass logisitc regression on mnist with minibaches and gradient descent can be found under [logreg/logistic_regression.py](logreg/logistic_regression.py). I did follow the tutorial for a mayor part of development. This implementation already solves several other problems and uses climin. To get an insight in the development process, please revere to `git log`.
+The code for multiclass logisitc regression on mnist with minibaches and gradient descent can be found under [logreg/logistic_regression.py](logreg/logistic_regression.py). I did follow the tutorial for a mayor part of development. This implementation already solves several other problems and uses climin. To get an insight in the development process, please refer to `git log`.
 
 **Problem 9:** Evaluate your implementation to classify handwritten digits from the MNIST dataset.
 
@@ -81,7 +81,7 @@ Training of the model is stopped if the improvement of the errors loss over a nu
 | Gradient descent              | 34.3 s         | 7.07 %               | 7.48 %         |
 | RMSPROP                       | 250.5 s        | 6.75 %               | 7.46 %         |
 | Resilient Propagation         | 35.6 s         | 12.15 %              | 12.55 %        |
-| Adam                          | 152.0          | 6.81 %               | 7.14 %         |
+| Adam                          | 152.0 s        | 6.81 %               | 7.14 %         |
 | Adadelta                      | 32.8 s         | 7.66 %               | 7.85 %         |
 
 
@@ -91,9 +91,10 @@ Training of the model is stopped if the improvement of the errors loss over a nu
 >
 > Chapter 28.2 Machine Learning A probabilistic perspective - Kevin P. Murphy
 
-Further, including modified data in the training set, can propagate unnatural characteristics in the dataset. If this feature is significant enough in a class, it is possible that the weigh of this feature is strengthen over a reasonable amount. A better approach would be to use a generative model. 
+Further, including modified data in the training set, can propagate unnatural characteristics in the dataset. If this feature is significant enough in a class, it is possible that the weigh of this feature is strengthen over a reasonable amount. A better approach would be to use a generative model.
 
 ## Two-layer neural network
+
 To run the code, do
 ```
 $ rake nn
@@ -101,36 +102,39 @@ $ rake nn
 or
 
 ```
-$ python logreg/logistic_regression.py tanh train
-$ python logreg/logistic_regression.py tanh plot repflds
-$ python logreg/logistic_regression.py tanh plot error
-$ python logreg/logistic_regression.py sigmoid train
-$ python logreg/logistic_regression.py sigmoid plot repflds
-$ python logreg/logistic_regression.py sigmoid plot error
-$ python logreg/logistic_regression.py relu train
-$ python logreg/logistic_regression.py relu plot repflds
-$ python logreg/logistic_regression.py relu plot error
+$ python nn/neural_net.py tanh train gd # or other activation (tanh/sigmoid/relu) function / optimizer (gd/rmsprop)
+$ python nn/neural_net.py tanh plot repflds
+$ python nn/neural_net.py tanh plot error
 ```
 
-**Problem 14:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 14:** Implement a neural network with one hidden layer. We suggest that you implement it in a way that it works with different kinds of optimization algorithms. Use stochastic gradient descent with mini-batches and rmsprop as the initial optimization method. Implement early stopping. You may follow the tutorial or, better, write your own implementation from ground up.
 
-**Bonus Question:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+The code for a multilayer perceptron on mnist with minibaches and gradient descent / rmsprop can be found under [nn/neural_net.py](nn/neural_net.py). I did follow the tutorial for a mayor part of development. To get an insight in the development process, please refer to `git log`.
 
-**Problem 15:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 15:** Evaluate your implementation on MNIST. Initially use 300 hidden units with tanh activation functions.
 
-**Problem 16:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 16:** Try different nonlinear activation functions for the hidden units. Evaluate logistic sigmoid, tanh and rectified linear neurons in the hidden layer. Think about how the different activation functions look like and how they behave. Does—and if it does, how does—this influence, e.g., weight initialization or data preprocessing? Implement and test your reasoning in your code to see if the results support your conclusions.
 
-**Problem 17:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 17:** Plot the error curves for the training, evaluation and test set for each of the activation functions evaluated in the previous problem into file error.png. That is, either provide one file with three subplots (one per activation function) and three error curves each, or provide three different files ([error_tanh.png](nn/error_tanh.png), [error_sigmoid.png](nn/error_sigmoid.png), and [error_relu.png](nn/error_relu.png)).
 
-![error](nn/error_tanh.png)
-![error](nn/error_sigmoid.png)
-![error](nn/error_relu.png)
-**Problem 18:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+![error tanh](nn/error_tanh.png)
+![error sigmoid](nn/error_sigmoid.png)
+![error relu](nn/error_relu.png)
+
+**Problem 18:** Visualize the receptive fields *of the hidden* layer and write them to file [repflds.png](nn/repflds_tanh.png). As in the previous problem, either provide one file with three subplots, or three distinct files([repflds_tanh.png)](nn/repflds_tanh.png), [repflds_sigmoid.png)](nn/repflds_sigmoid.png), [repflds_relu.png)](nn/repflds_relu.png)).
 
 ![receptiva fields](nn/repflds_tanh.png)
 ![receptiva fields](nn/repflds_sigmoid.png)
 ![receptiva fields](nn/repflds_relu.png)
-**Problem 19:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+
+**Problem 19:**  Fine tune your implementation until you achieve an error rate of about 2%. Optionally try augmenting the training set as described in section [2](Multiclass Logistic Regression). Do not spend too much time on this problem.
+
+| Activation function           | Runtime        | Best validation loss | Best test loss |
+| :---------------------------- | :------------- | :------------------- | :------------- |
+| Hyperbolic Tangens            | 445.2 m        | 1.67 %               | 1.81 %         |
+| Logistic Sigmoid              | 46.3 m         | 2.01 %               | 2.05 %         |
+| Rectified Linear Neurons      | 6.2 m          | 1.77 %               | 1.76 %         |
 
 ### PCA and sparse autoencoder
 
@@ -146,26 +150,34 @@ $ python latent/dA.py train
 $ python latent/dA.py plot
 ```
 
-**Problem 20:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 20:** Implement PCA in Python using Theano. Write your own implementation from ground up.
 
-**Problem 21:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-**Problem 22:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-**Problem 23:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-**Problem 24:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-**Problem 25:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-**Problem 26:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-**Bonus Question:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 21:** Produce a PCA scatterplot (see http://peekaboo-vision.blogspot.de/2012/12/another-look-at-mnist.html) on MNIST, also do this on CIFAR-10. Write them to file [scatterplotMNIST.png](latent/scatterplotMNIST.png) and [scatterplotCIFAR.png](latent/scatterplotCIFAR.png) respectively.
 
 ![pca on MNIST](latent/scatterplotMNIST.png)
 ![pca on CIFAR-10](latent/scatterplotCIFAR.png)
-![receptive fields sparse autoencoder](latent/autoencoderfilter.png)
+
+**Problem 22:** Implement an autoencoder in Python using Theano. Train the network using the squared error loss L(x) = ||f (x) − x||2 where x is a data sample and f (x) is the output of the autoencoder. You may follow a part of the tutorial or, better, write your own implementation from ground up. If training is difficult using gradient descent, try using the RMSprop optimizer.
+
+
+
+**Problem 23:** Increase the number of hidden units, but add a sparsity constraint on the hidden units. This means that the network should be encouraged to have most hidden units close to zero for a sample from the data set. This can be done by adding an L1 penalty (see literature section for reasons behind this) to the loss function, for example Lsparse(x) = L(x) + λ|h(x)|1 where h(x) denotes the hidden layer values for sample x and |z|1 =  i |zi| is the L1-norm of z. λ > 0 is a new hyperparameter that determines the trade-off between sparsity and reconstruction error.
+
+**Problem 24:** Train the sparse autoencoder on MNIST. Write the reconstructions (i.e. outputs of the autoencoder) of the first 100 samples from the test set of MNIST into file [autoencoderrec.png](latent/autoencoderrec.png). Adjust λ and see how it affects the reconstructions.
+
 ![receptive fields sparse autoencoder](latent/autoencoderrec.png)
+
+**Problem 25:** Visualise the learnt receptive fields (weights of the first layer). Write them to file [autoencoderfilter.png](latent/autoencoderfilter.png). Adjust λ and see how it affects the receptive fields.
+
+![receptive fields sparse autoencoder](latent/autoencoderfilter.png)
+
+
+**Problem 26:** Explain the meaning of a sparse encoding of MNIST.
+
+**Bonus problem:** Replace the sparsity-inducing *L_1* penalty by a KL-divergence penalty between the data- induced distribution of the hidden units and Bernoulli random variables with a low (p < 0.05) success probability. This is described in http://ufldl.stanford.edu/wiki/index.php/Autoencoders_and_Sparsity.
+
 ## t-SNE
 
 To run the code, do
@@ -199,12 +211,12 @@ or
 $ python kmeans/kmeans.py train
 $ python kmeans/kmeans.py plot
 ```
-**Problem 30:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 30:** Implement k-Means in Python using Theano. Follow the above paper by Adam Coates and implement the steps on page 5 (skip everything from section 4 on).
 
-**Problem 31:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-**Bonus Question:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-**Bonus Question:** Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+**Problem 31:** Train your model on the CIFAR-10 dataset and visualise your receptive fields. Save them to file [repflds.png](kmeans/repflds.png). Make sure to rescale the images in the dataset from 32 × 32 to 12 × 12 pixels and choose no more than 500 centres.
 
 ![repfields](kmeans/repflds.png)
+
+**Bonus problem:** Implement minibatch k-Means.
+
+**Bonus problem:** Implement the k-Means version from the paper B. Kulis, M. Jordan: Revisiting k- means: New Algorithms via Bayesian Nonparametrics (http://arxiv.org/pdf/1111.0352.pdf). Apply it on a (rather large) set of of colour images and try to determine a good colour palette.

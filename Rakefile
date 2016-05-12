@@ -35,20 +35,25 @@ end
 task logreg: ['logreg/repflds.png', 'logreg/error.png', 'logreg:predict']
 
 namespace :nn do
+
+  task :predict => 'logreg/best_model.pkl' do
+    %x(python nn/neural_net.py predict 1>&2)
+  end
+
   namespace :tanh do
     file 'nn/best_model_tanh.pkl' do
-      %x(python nn/neural_net.py train tanh 1>&2)
+      %x(python nn/neural_net.py train tanh gd 1>&2)
     end
 
     file 'nn/error_tanh.png' => 'nn/best_model_tanh.pkl' do
-      %x(python nn/neural_net.py plot error tanh 1>&2)
+      %x(python nn/neural_net.py plot error 1>&2)
     end
 
     file 'nn/repflds_tanh.png' => 'nn/best_model_tanh.pkl' do
-      %x(python nn/neural_net.py plot repfds tanh 1>&2)
+      %x(python nn/neural_net.py plot repfds 1>&2)
     end
   end
-  task tanh: ['nn/repflds_tanh.png', 'nn/error_tanh.png']
+  task tanh: ['nn/repflds_tanh.png', 'nn/error_tanh.png', 'nn:predict']
 
   namespace :sigmoid do
     file 'nn/best_model_sigmoid.pkl' do
@@ -63,7 +68,7 @@ namespace :nn do
       %x(python nn/neural_net.py plot repfds sigmoid 1>&2)
     end
   end
-  task sigmoid: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png']
+  task sigmoid: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png', 'nn:predict']
 
   namespace :relu do
     file 'nn/best_model_relu.pkl' do
@@ -78,7 +83,7 @@ namespace :nn do
       %x(python nn/neural_net.py plot repfds relu 1>&2)
     end
   end
-  task relu: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png']
+  task relu: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png', 'nn:predict']
 end
 task nn: ['nn:tanh', 'nn:sigmoid', 'nn:relu']
 
