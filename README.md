@@ -131,14 +131,21 @@ Since the logistic sigmoid can be very flat around the origin, it is important t
 
 **Problem 17:** Plot the error curves for the training, evaluation and test set for each of the activation functions evaluated in the previous problem into file error.png. That is, either provide one file with three subplots (one per activation function) and three error curves each, or provide three different files ([error_tanh.png](nn/error_tanh.png), [error_sigmoid.png](nn/error_sigmoid.png), and [error_relu.png](nn/error_relu.png)).
 
+I plotted only the validation and test loss, since omitting calculating the training loss resulted in a very significant reduction in time needed to train the model. The train loss can easily added to the plot, if required.
+
+Activation Hyperbolic Tangens:
 ![error tanh](nn/error_tanh.png)
+Activation Logistic Sigmoid:
 ![error sigmoid](nn/error_sigmoid.png)
 ![error relu](nn/error_relu.png)
 
 **Problem 18:** Visualize the receptive fields *of the hidden* layer and write them to file [repflds.png](nn/repflds_tanh.png). As in the previous problem, either provide one file with three subplots, or three distinct files([repflds_tanh.png)](nn/repflds_tanh.png), [repflds_sigmoid.png)](nn/repflds_sigmoid.png), [repflds_relu.png)](nn/repflds_relu.png)).
 
+Activation Hyperbolic Tangens:
 ![receptiva fields](nn/repflds_tanh.png)
+Activation Logistic Sigmoid:
 ![receptiva fields](nn/repflds_sigmoid.png)
+Activation Rectified Linear Neurons:
 ![receptiva fields](nn/repflds_relu.png)
 
 

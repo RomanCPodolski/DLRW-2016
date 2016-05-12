@@ -268,7 +268,7 @@ def train(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 1000,
     elif activation == 'sigmoid':
         print('... using logistic sigmoid as activation function in the hidden layer')
         activation_function = T.nnet.sigmoid
-        cli.initialize.randomize_normal(flat, 0, 0.1)
+        cli.initialize.randomize_normal(flat, 0, 0.05)
     elif activation == 'relu':
         print('... using rectified linear neurons as activation function in the hidden layer')
         activation_function = T.nnet.relu
@@ -347,7 +347,7 @@ def train(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 1000,
         return np.concatenate([g_W_h.flatten(), g_b_h, g_W_l.flatten(), g_b_l])
 
     if optimizer == 'gd':
-        print('... using gradient descent')
+        print('... using gradient descent aka back propagation')
         opt = cli.GradientDescent(flat, d_loss_wrt_pars, step_rate = learning_rate, momentum = .95, args=args)
     elif optimizer == 'rmsprop':
         print('... using rmsprop')
@@ -479,7 +479,7 @@ def plot(classifier):
     plt.legend()
 
     plt.title('Error activation %s with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (classifier.activation_n, best_validation_loss, best_test_loss, time_trained))
-    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_error.png'))
+    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], 'error_' + classifier.activation_n + '_error.png'))
     plt.savefig(os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_error.png'))
 
     import scipy.ndimage
@@ -494,8 +494,8 @@ def plot(classifier):
     repflds = np.asarray(repflds)
 
     image = Image.fromarray(tile_raster_images(X = repflds, img_shape = (28 * magnification, 28 * magnification), tile_shape = (15, 15), tile_spacing = (1, 1)))
-    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_repflds.png'))
-    image.save(os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_repflds.png'))
+    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], 'repflds_' + classifier.activation_n + '.png'))
+    image.save(os.path.join(os.path.split(__file__)[0], 'repfds_' + classifier.activation_n + '.png'))
 
     return classifier
 
