@@ -40,6 +40,7 @@ from logistic_regression import LogisticRegression
 
 sys.path.append(os.path.join(os.path.split(__file__)[0], '..', 'data'))
 from data import load_data
+from utils import tile_raster_images
 
 import numpy as np
 
@@ -52,6 +53,11 @@ import climin.util
 import itertools
 
 import matplotlib.pyplot as plt
+
+try:
+    import PIL.Image as Image
+except ImportError:
+    import Image
 
 class HiddenLayer(object):
 
@@ -422,27 +428,20 @@ def train(learning_rate = 0.01, L1_reg = 0.00, L2_reg = 0.0001, n_epochs = 1000,
         ' ran for %.2fm' % ((end_time - start_time) / 60.)), file=sys.stderr)
 
     classifier.losses = (np.asarray(train_losses), np.asarray(valid_losses), np.asarray(test_losses))
-    classifier.methadata = (best_validation_loss * 100., test_score * 100.,(end_time - start_time) / 60.)
+    classifier.methadata = (best_validation_loss * 100., test_score * 100., (end_time - start_time) / 60.)
 
-    s = os.path.join(os.path.split(__file__)[0], 'best_model_' + classifier.activation_n + '.pkl')
-    with open(s, 'wb') as f:
-        pickle.dump(classifier, f)
+    return classifier
 
-    return 1
-
-def predict():
+def predict(classifier):
     """
     An example of how to load a trained model and use it
     to predict labels.
     """
 
-    # loads the saved model
-    classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
-
     # compile a predictor function
     predict_model = theano.function(
             inputs = [classifier.input],
-            outputs = classifier.y_pred)
+            outputs = classifier.logRegressionLayer.y_pred)
 
     # We can test it on some examples from test set
     dataset = 'mnist.pkl.gz'
@@ -456,8 +455,7 @@ def predict():
 
     return 1
 
-def plot(element):
-    classifier = pickle.load(open(os.path.join(os.path.split(__file__)[0], 'best_model.pkl')))
+def plot(classifier):
 
     optimizer_names = {
             'gd': 'Gradient Descent',
@@ -470,145 +468,44 @@ def plot(element):
             'adadelta': 'Adadelta',
             }
 
-    if element == 'error':
-        print('... plotting the error')
-        f_error = plt.figure()
-        train_loss, valid_loss, test_loss = classifier.losses
-        best_validation_loss, best_test_loss, epochs, epochs_pro_second, time_trained = classifier.methadata
+    print('... plotting the error')
+    f_error = plt.figure()
+    train_loss, valid_loss, test_loss = classifier.losses
+    best_validation_loss, best_test_loss, time_trained = classifier.methadata
 
-        plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-        plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
+    plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
+    plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
 
-        plt.legend()
+    plt.legend()
 
-        plt.title("Error %s with best validation score of %f %%,\n test performance %f %%, after %.1fs " % (optimizer_names[classifier.optimizer], best_validation_loss, best_test_loss, time_trained))
-        print('... saving to file ' + os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_error.png'))
-        plt.savefig(os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_error.png'))
+    plt.title('Error activation %s with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (classifier.activation_n, best_validation_loss, best_test_loss, time_trained))
+    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_error.png'))
+    plt.savefig(os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_error.png'))
 
-    elif element == 'repflds':
-        import scipy.ndimage
-        print('... plotting the receptive fields')
+    import scipy.ndimage
+    print('... plotting the receptive fields')
 
-        magnification = 1
-        repflds = []
-        for i in xrange(10):
-            r = scipy.ndimage.zoom(np.reshape(classifier.W.get_value(borrow = True)[:,i], (28, 28)), magnification, order = 0).flatten()
-            repflds.append(r)
+    magnification = 3
+    repflds = []
+    for i in xrange(300):
+        r = scipy.ndimage.zoom(np.reshape(classifier.hiddenLayer.W.get_value(borrow = True)[:,i], (28, 28)), magnification, order = 0).flatten()
+        repflds.append(r)
 
-        repflds = np.asarray(repflds)
+    repflds = np.asarray(repflds)
 
-        image = Image.fromarray(tile_raster_images(X = repflds, img_shape = (28 * magnification, 28 * magnification), tile_shape = (15, 15), tile_spacing = (1, 1)))
-        print('... saving to file ' + os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_repflds.png'))
-        image.save(os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_repflds.png'))
+    image = Image.fromarray(tile_raster_images(X = repflds, img_shape = (28 * magnification, 28 * magnification), tile_shape = (15, 15), tile_spacing = (1, 1)))
+    print('... saving to file ' + os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_repflds.png'))
+    image.save(os.path.join(os.path.split(__file__)[0], classifier.activation_n + '_repflds.png'))
 
-    else:
-        print("don't know how to plot %" % p) 
-        print("either use 'error' or 'repflds'") 
-        return -1
-
-    return 1
+    return classifier
 
 def main(argv):
 
-    if len(argv) < 1:
-        print("please call with at least 1 argument")
+    if len(argv) < 2:
+        print("please define a activation function and optimizer to use")
         return -1
 
-    command = argv[0]
-
-    if command == 'train':
-        if len(argv) < 3:
-            print("please define a activation function and optimizer to use")
-            return -1
-
-        return train(activation = argv[1], optimizer = argv[2])
-
-    elif command == 'plot':
-        return plot(argv[1])
-
-    elif command == 'predict':
-        return predict()
-    else: 
-        print('unknown command: %' % command) 
-        print("either use 'train', 'plot' or 'predict'") 
-        return -1
+    return predict(plot(train(activation = argv[0], optimizer = argv[1])))
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
-    # f = plt.figure()
-    # classifier, losses, methadata = test_mlp(activation = T.tanh, optimizer = 'rmsprop')
-    # train_loss, valid_loss, test_loss = losses
-    # best_validation_loss, best_test_loss, time_trained = methadata
-
-    # # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
-    # plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    # plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
-
-    # plt.legend()
-
-    # plt.title('Error activation tanh with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
-    # plt.savefig('errors_tanh.png')
-
-    # f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
-    # repfield = []
-
-    # for i in range(300):
-        # repfield.append(np.reshape(np.array(classifier.hiddenLayer.W.get_value())[:,i], (28, 28)))
-
-    # for ax, rep in zip(axes.flat, repfield):
-        # ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
-
-    # f_repfields.suptitle('Receptive Fields for a two layer neural net with 300 tanh neurons on MNIST')
-    # plt.savefig('repfields_tanh.png')
-
-    # f = plt.figure()
-    # classifier, losses, methadata = test_mlp(activation = T.nnet.sigmoid, optimizer = 'gd')
-    # train_loss, valid_loss, test_loss = losses
-    # best_validation_loss, best_test_loss, time_trained = methadata
-
-    # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
-    # plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    # plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
-
-    # plt.legend()
-
-    # plt.title('Error activation sigmoid with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
-    # plt.savefig('errors_sigmoid.png')
-
-    # f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
-    # repfield = []
-
-    # for i in range(300):
-        # repfield.append(np.reshape(np.array(classifier.hiddenLayer.W.get_value())[:,i], (28, 28)))
-
-    # for ax, rep in zip(axes.flat, repfield):
-        # ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
-
-    # f_repfields.suptitle('Receptive Fields for a two layer neural net with 300 sigmoid neurons on MNIST')
-    # plt.savefig('repfields_sigmoid.png')
-
-    # f = plt.figure()
-    # classifier, losses, methadata = test_mlp(activation = T.nnet.relu, optimizer = 'gd')
-    # train_loss, valid_loss, test_loss = losses
-    # best_validation_loss, best_test_loss, time_trained = methadata
-
-    # plt.plot(gd_train_loss, '-', linewidth = 1, label = 'train loss')
-    # plt.plot(valid_loss[:,0], valid_loss[:,1], '-', linewidth = 1, label = 'validation loss')
-    # plt.plot(test_loss[:,0], test_loss[:,1], '-', linewidth = 1, label = 'test loss')
-
-    # plt.legend()
-
-    # plt.title('Error activation ReLU with best validation score of %f %%,\n test performance %f %%, after %.1fm ' % (best_validation_loss, best_test_loss, time_trained))
-    # plt.savefig('errors_relu.png')
-
-    # f_repfields, axes  = plt.subplots(15, 20, subplot_kw = {'xticks': [], 'yticks': []})
-    # repfield = []
-
-    # for i in range(300):
-        # repfield.append(np.reshape(np.array(classifier.hiddenLayer.W.get_value())[:,i], (28, 28)))
-
-    # for ax, rep in zip(axes.flat, repfield):
-        # ax.imshow(rep, cmap=plt.cm.gray, interpolation = 'none')
-
-    # f_repfields.suptitle('Receptive Fields for a two layer neural net with 300 ReLU Neurons on MNIST')
-    # plt.savefig('repfields_relu.png')

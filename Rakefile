@@ -41,49 +41,38 @@ namespace :nn do
   end
 
   namespace :tanh do
-    file 'nn/best_model_tanh.pkl' do
-      %x(python nn/neural_net.py train tanh gd 1>&2)
+
+    file 'nn/error_tanh.png' do
+      %x(python nn/neural_net.py tanh gd 1>&2)
     end
 
-    file 'nn/error_tanh.png' => 'nn/best_model_tanh.pkl' do
-      %x(python nn/neural_net.py plot error 1>&2)
-    end
-
-    file 'nn/repflds_tanh.png' => 'nn/best_model_tanh.pkl' do
-      %x(python nn/neural_net.py plot repfds 1>&2)
+    file 'nn/repflds_tanh.png' do
+      %x(python nn/neural_net.py tanh gd 1>&2)
     end
   end
-  task tanh: ['nn/repflds_tanh.png', 'nn/error_tanh.png', 'nn:predict']
+  task tanh: ['nn/repflds_tanh.png', 'nn/error_tanh.png']
 
   namespace :sigmoid do
-    file 'nn/best_model_sigmoid.pkl' do
-      %x(python nn/neural_net.py train sigmoid 1>&2)
+    file 'nn/error_sigmoid.png' do
+      %x(python nn/neural_net.py sigmoid gd 1>&2)
     end
 
-    file 'nn/error_sigmoid.png' => 'nn/best_model_sigmoid.pkl' do
-      %x(python nn/neural_net.py plot error sigmoid 1>&2)
-    end
-
-    file 'nn/repflds.png' => 'nn/best_model_sigmoid.pkl' do
-      %x(python nn/neural_net.py plot repfds sigmoid 1>&2)
+    file 'nn/repflds_sigmoid.png' do
+      %x(python nn/neural_net.py sigmoid gd 1>&2)
     end
   end
-  task sigmoid: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png', 'nn:predict']
+  task sigmoid: ['nn/repflds_sigmoid.png', 'nn/error_sigmoid.png']
 
   namespace :relu do
-    file 'nn/best_model_relu.pkl' do
-      %x(python nn/neural_net.py train relu 1>&2)
+    file 'nn/error_relu.png' do
+      %x(python nn/neural_net.py relu gd 1>&2)
     end
 
-    file 'nn/error_relu.png' => 'nn/best_model_relu.pkl' do
-      %x(python nn/neural_net.py plot error relu 1>&2)
-    end
-
-    file 'nn/repflds.png' => 'nn/best_model_relu.pkl' do
-      %x(python nn/neural_net.py plot repfds relu 1>&2)
+    file 'nn/repflds_relu.png' do
+      %x(python nn/neural_net.py relu gd 1>&2)
     end
   end
-  task relu: ['nn/repfds_sigmoid.png', 'nn/error_sigmoid.png', 'nn:predict']
+  task relu: ['nn/repflds_relu.png', 'nn/error_relu.png']
 end
 task nn: ['nn:tanh', 'nn:sigmoid', 'nn:relu']
 
