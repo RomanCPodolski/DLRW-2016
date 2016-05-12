@@ -26,11 +26,27 @@ Individual student repository for the 2016 Summer semester course Deep Learning 
 ![receptiva fields](nn/repflds_relu.png)
 ### Problem 19:
 ## PCA and sparse autoencoder
+### Problem 20:
+### Problem 21:
+### Problem 22:
+### Problem 23:
+### Problem 24:
+### Problem 25:
+### Problem 26:
+### Bonus Question:
 ![pca on MNIST](latent/scatterplotMNIST.png)
 ![pca on CIFAR-10](latent/scatterplotCIFAR.png)
 ![receptive fields sparse autoencoder](latent/autoencoderfilter.png)
 ![receptive fields sparse autoencoder](latent/autoencoderrec.png)
 ## t-SNE
+### Problem 27:
+### Problem 28:
 ![embeddings](tsne/embeddings.png)
+### Problem 29:
+![tsne on mnist](tsne/tsne_mnist.png)
 ## k-Mean
+### Problem 30:
+### Problem 31:
+### Bonus Question:
+### Bonus Question:
 ![repfields](kmeans/repflds.png)

@@ -9,7 +9,7 @@ end
 
 PLOTS = Rake::FileList.new('**/*.png')
 SERIALIZATION = Rake::FileList.new('**/*.pkl')
-DATASETS = Rake::FileList.new('**/*.gz, **/*.tar')
+DATASETS = Rake::FileList.new('data/mnist.pkl.gz, data/cifar-10-python.tar')
 
 CLEAN << [ SERIALIZATION, DATASETS ]
 CLOBBER << PLOTS
@@ -78,11 +78,34 @@ namespace :nn do
 end
 task nn: ['nn:tanh', 'nn:sigmoid', 'nn:relu']
 
-task :tsne do
-  Dir.chdir('tsne')
-  %w(python tsne.py 1>&2)
-  Dir.chdir('..')
+namespace :tsne do
+  file 'tsne/bh_tsne.tar.gz' do
+    puts 'load '
+    %x(wget some_url > tsne/bh_tsne.tar.gz)
+  end
+
+  file 'tsne/bh_tsne' => 'tsne/bh_tsne.tar.gz' do
+    puts 'unpack '
+    %x(tar -xf tsne/bh_tsne.tar.gz -C tsne)
+  end
+
+  file 'tsne/bh_tsne/bh_tsne' => 'tsne/bh_tsne' do
+    puts 'compile '
+    %x(g++ tsne/bh_tsne/sptree.cpp tsne/bh_tsne/tsne.cpp -o tsne/bh_tsne/bh_tsne -O2)
+  end
+
+  file 'tsne/data.pkl' => 'tsne/bh_tsne/bh_tsne' do
+    puts 'train '
+    %x(python tsne/tsne_mnist.py train 1>&2)
+  end
+
+  desc 'shit'
+  file 'tsne/tsne_mnist.png' do
+    puts 'plot '
+    %x(python tsne/tsne_mnist.py plot 1>&2)
+  end
 end
+task :tsne ['tsne/tsne_mnist.png']
 
 namespace :latent do
   namespace :pca do
@@ -123,6 +146,7 @@ namespace :latent do
   end
   task autoencoder: ['latent/autoencoderrec.png', 'latent/autoencoderfilter.png']
 end
+task latent: ['latent:pca', 'latent:autoencoder']
 
 namespace :kmeans do
   file 'kmeans/best_model.pkl' do
