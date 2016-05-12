@@ -154,8 +154,8 @@ Activation Rectified Linear Neurons:
 | Activation function           | Runtime        | Best validation loss | Best test loss |
 | :---------------------------- | :------------- | :------------------- | :------------- |
 | Hyperbolic Tangens            | 59.2 m         | 1.68 %               | 1.77 %         |
-| Logistic Sigmoid              | 46.3 m         | 2.01 %               | 2.05 %         |
-| Rectified Linear Neurons      | 6.2 m          | 1.77 %               | 1.76 %         |
+| Logistic Sigmoid              | 59.9 m         | 1.92 %               | 2.20 %         |
+| Rectified Linear Neurons      | 5.0 m          | 1.72 %               | 1.88 %         |
 
 ### PCA and sparse autoencoder
 
@@ -192,11 +192,13 @@ The code for denoizing autoencoder on mnist with minibaches and gradient descent
 **Problem 24:** Train the sparse autoencoder on MNIST. Write the reconstructions (i.e. outputs of the autoencoder) of the first 100 samples from the test set of MNIST into file [autoencoderrec.png](latent/autoencoderrec.png). Adjust λ and see how it affects the reconstructions.
 
 Reconstructions for λ = 0.3
+
 ![receptive fields sparse autoencoder](latent/autoencoderrec.png)
 
 **Problem 25:** Visualize the learnt receptive fields (weights of the first layer). Write them to file [autoencoderfilter.png](latent/autoencoderfilter.png). Adjust λ and see how it affects the receptive fields.
 
 Produced with λ = 0.3
+
 ![receptive fields sparse autoencoder](latent/autoencoderfilter.png)
 
 **Problem 26:** Explain the meaning of a sparse encoding of MNIST.
@@ -224,8 +226,8 @@ Very brief: t-SNE learns a low dimensional representation of high dimensional da
 
 **Problem 28:** Download the Python implementation from http://lvdmaaten.github.io/tsne and experiment with it to produce 2D embeddings for a large number of data samples.
 
-
 **Problem 29:** Reproduce Figure 5 of the Barnes-Hut-SNE paper listed above.
+
 This plot has a resolution of 8000x8000 pixels. In higher resolutions, the MNIST digits are visible, but the picture takes very long to plot, and to upload to github. This is a reduced representation.
 ![tsne on mnist](tsne/tsne_mnist.png)
 
