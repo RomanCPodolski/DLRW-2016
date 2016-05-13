@@ -97,24 +97,12 @@ task :tsne ['tsne/tsne_mnist.png']
 
 namespace :latent do
   namespace :pca do
-    namespace :mnist do
-      file 'latent/pca_mnist.pkl' do
-        %x(python latent/pca.py mnist train 1>&2)
+      file 'latent/scatterplotMNIST.png' do
+        %x(python latent/pca.py 1>&2)
       end
 
-      file 'latent/scatterplotMNIST.png' => 'latent/pca_mnist.pkl' do
-        %x(python latent/pca.py mnist plot 1>&2)
-      end
-    end
-
-    namespace :cifar do
-      file 'latent/pca_cifar.pkl' do
-        %x(python latent/pca.py cifar train 1>&2)
-      end
-
-      file 'latent/scatterplotCIFAR.png' => 'latent/pca_cifar.pkl' do
-        %x(python latent/pca.py cifar plot 1>&2)
-      end
+    file 'latent/scatterplotCIFAR.png' do
+      %x(python latent/pca.py 1>&2)
     end
   end
   task pca: ['latent/scatterplotMNIST.png', 'latent/scatterplotCIFAR.png']
