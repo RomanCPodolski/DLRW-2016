@@ -96,7 +96,8 @@ class dA(object):
         bvis=None,
         corruption_level = 0.,
         sparsity_lambda = 0,
-        learning_rate = 0.13
+        learning_rate = 0.13,
+        sparse = 'KL'
     ):
         """
         Initialize the dA class by specifying the number of visible units (the
@@ -210,6 +211,17 @@ class dA(object):
         self.z = self.get_reconstructed_input(self.y)
         self.L = - T.sum(self.x * T.log(self.z) + (1 - self.x) * T.log(1 - self.z), axis=1)
         self.L1_hidden_penalty = sparsity_lambda * self.y.mean(axis = 0).sum()
+        if sparse == 'L1':
+            self.L1_hidden_penalty = sparsity_lambda * self.y.mean(axis = 0).sum()
+            self.cost = T.mean(self.L) + self.L1_hidden_penalty
+        elif sparse == 'KL':
+            roh_j = T.mean(self.y, axis = 0)
+            KL = roh_j * T.log(0.05 / roh_j) + (1 - 0.05) * T.log((1 - 0.05) / (1 - roh_j))
+            self.cost = T.mean(self.L) + 1 * T.sum(KL)
+        else:
+            print('unknown sparcity funciton')
+            sys.exit(-1)
+
         self.cost = T.mean(self.L) + self.L1_hidden_penalty
 
         # compute the gradients of the cost of the `dA` with respect
