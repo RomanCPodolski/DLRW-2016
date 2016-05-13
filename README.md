@@ -155,7 +155,7 @@ Activation Rectified Linear Neurons:
 | :---------------------------- | :------------- | :------------------- | :------------- |
 | Hyperbolic Tangens            | 59.2 m         | 1.68 %               | 1.77 %         |
 | Logistic Sigmoid              | 59.9 m         | 1.92 %               | 2.20 %         |
-| Rectified Linear Neurons      | 5.0 m          | 1.72 %               | 1.88 %         |
+| Rectified Linear Neurons      | 120.6 m        | 1.51 %               | 1.78 %         |
 
 ### PCA and sparse autoencoder
 
